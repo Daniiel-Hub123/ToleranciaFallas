@@ -1,0 +1,1 @@
+# Registro de logs que demuestran los reintentos exitosos ante fallo de disponibilidad (Fallo 1)

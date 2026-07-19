@@ -1,0 +1,1 @@
+# Registro de logs del fallback y degradación elegante ante fallo de notificaciones (Fallo 5)

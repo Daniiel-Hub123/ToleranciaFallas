@@ -1,0 +1,1 @@
+# Registro de logs del API Gateway respondiendo 429 Too Many Requests ante sobrecarga (Fallo 3)
