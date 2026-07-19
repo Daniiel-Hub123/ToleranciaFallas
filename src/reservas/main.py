@@ -3,6 +3,7 @@ import httpx
 import time
 import asyncio
 import sqlite3
+import os
 
 app = FastAPI(title="Servicio de Reservas")
 
@@ -10,8 +11,12 @@ INVENTARIO_URL = "http://inventario-service:8000"
 PAGOS_URL = "http://pagos-service:8000"
 NOTIFICACIONES_URL = "http://notificaciones-service:8000"
 
+# Asegurar la existencia del directorio de datos para montar el volumen en Kubernetes
+os.makedirs("data", exist_ok=True)
+DB_PATH = "data/reservas.db"
+
 # Inicializar Base de Datos SQLite (Persistencia de Datos por Servicio)
-conn = sqlite3.connect("reservas.db")
+conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS reservas (
@@ -86,7 +91,7 @@ async def crear_reserva(payload: dict):
     # Guardar en Base de Datos (Persistencia)
     reserva_id = f"RES-{int(time.time() * 1000)}"
     try:
-        conn = sqlite3.connect("reservas.db")
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("INSERT INTO reservas (id, asiento_id, estado) VALUES (?, ?, ?)", 
                        (reserva_id, asiento_id, "CONFIRMADA"))
