@@ -55,15 +55,14 @@ async def crear_reserva(payload: dict):
         try:
             # Timeout corto de 3 segundos para evitar colgar conexiones ante una pasarela lenta
             res_pago = await client.post(f"{PAGOS_URL}/pagar", json={"monto": 100}, timeout=3.0)
+            res_pago.raise_for_status()
             
             if res_pago.status_code == 200:
                 if circuit_breaker["state"] == "HALF-OPEN":
                     circuit_breaker["state"] = "CLOSED"
                     circuit_breaker["failures"] = 0
-            else:
-                raise httpx.HTTPStatusError("Error en pago", request=None, response=res_pago)
                 
-        except (httpx.TimeoutException, httpx.RequestError):
+        except httpx.HTTPError:
             circuit_breaker["failures"] += 1
             circuit_breaker["last_failure_time"] = time.time()
             if circuit_breaker["failures"] >= circuit_breaker["failure_threshold"]:
