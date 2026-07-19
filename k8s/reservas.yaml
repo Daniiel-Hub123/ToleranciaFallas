@@ -1,1 +1,72 @@
 # Manifiesto Kubernetes para el servicio de reservas
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservas-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: reservas
+  template:
+    metadata:
+      labels:
+        app: reservas
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - reservas
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: reservas
+        image: toleraciafallas/reservas:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        env:
+        - name: INVENTARIO_SERVICE_URL
+          value: "http://inventario-service:8000"
+        - name: PAGOS_SERVICE_URL
+          value: "http://pagos-service:8000"
+        - name: NOTIFICACIONES_SERVICE_URL
+          value: "http://notificaciones-service:8000"
+        - name: DB_HOST
+          value: "database-service"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config
+              key: POSTGRES_DB
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reservas-service
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8000
+  selector:
+    app: reservas

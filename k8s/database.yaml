@@ -1,13 +1,76 @@
-# Base de Datos (Persistencia de Datos por Servicio)
+# Manifiesto Kubernetes para la Base de Datos (PostgreSQL)
 #
-# Siguiendo el patrón arquitectónico de "Database per Service" (Base de Datos por Servicio),
-# no se utiliza una base de datos centralizada compartida en este clúster.
-#
-# En su lugar, el servicio de Reservas gestiona su propio almacenamiento local de datos 
-# utilizando SQLite (reservas.db) y un volumen de persistencia persistente montado en 
-# el host (hostPath) configurado dentro de 'reservas.yaml'.
+# Se utiliza una base de datos PostgreSQL dedicada para el servicio de reservas,
+# implementando el patrón "Database per Service" (Base de Datos por Servicio).
 #
 # Esto garantiza que:
-# 1. Cada servicio sea dueño absoluto de su base de datos.
-# 2. Se evite el Punto Único de Fallo (Single Point of Failure) de una DB central.
-# 3. La persistencia esté garantizada de forma aislada ante reinicios de pods.
+# 1. El servicio de reservas es dueño de su propia base de datos.
+# 2. La persistencia esté garantizada en un contenedor de PostgreSQL dedicado.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+data:
+  POSTGRES_DB: reservas_db
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+type: Opaque
+data:
+  POSTGRES_USER: YWRtaW4=
+  POSTGRES_PASSWORD: c3VwZXJzZWNyZXRwYXNzd29yZA==
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: db-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database-service
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: database
