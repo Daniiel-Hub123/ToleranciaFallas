@@ -2,12 +2,26 @@ from fastapi import FastAPI, HTTPException
 import httpx
 import time
 import asyncio
+import sqlite3
 
 app = FastAPI(title="Servicio de Reservas")
 
 INVENTARIO_URL = "http://inventario-service:8000"
 PAGOS_URL = "http://pagos-service:8000"
 NOTIFICACIONES_URL = "http://notificaciones-service:8000"
+
+# Inicializar Base de Datos SQLite (Persistencia de Datos por Servicio)
+conn = sqlite3.connect("reservas.db")
+cursor = conn.cursor()
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS reservas (
+        id TEXT PRIMARY KEY,
+        asiento_id TEXT,
+        estado TEXT
+    )
+""")
+conn.commit()
+conn.close()
 
 # Estado básico para Circuit Breaker manual (Fallo 2: Pasarela Lenta)
 circuit_breaker = {
@@ -69,17 +83,30 @@ async def crear_reserva(payload: dict):
                 circuit_breaker["state"] = "OPEN"
             raise HTTPException(status_code=504, detail="La pasarela de pagos tarda demasiado. Operación cancelada para proteger el sistema (Circuit Breaker).")
 
+    # Guardar en Base de Datos (Persistencia)
+    reserva_id = f"RES-{int(time.time() * 1000)}"
+    try:
+        conn = sqlite3.connect("reservas.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO reservas (id, asiento_id, estado) VALUES (?, ?, ?)", 
+                       (reserva_id, asiento_id, "CONFIRMADA"))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[DB ERROR]: No se pudo persistir la reserva en SQLite: {e}")
+
     # 3. NOTIFICACIÓN (Tratado como fallo no crítico - Fallo 5)
     notificacion_enviada = True
     try:
         async with httpx.AsyncClient() as client:
-            await client.post(f"{NOTIFICACIONES_URL}/enviar", json={"mensaje": "Reserva confirmada"}, timeout=1.5)
+            await client.post(f"{NOTIFICACIONES_URL}/enviar", json={"mensaje": f"Reserva {reserva_id} confirmada"}, timeout=1.5)
     except Exception as e:
         print(f"[FALLBACK LOG]: No se pudo enviar el correo de confirmación. Detalle: {e}")
         notificacion_enviada = False
 
     return {
         "status": "Reserva Completada",
+        "reserva_id": reserva_id,
         "asiento_id": asiento_id,
         "notificacion_estado": "Enviada" if notificacion_enviada else "Pendiente de reenvío en background"
     }
