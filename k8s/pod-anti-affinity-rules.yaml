@@ -1,1 +1,12 @@
 # Reglas de Pod Anti-Affinity para la distribucion de replicas entre nodos
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: reservas-pdb
+spec:
+  # Garantiza que, incluso durante eventos de desalojo voluntario en los nodos,
+  # al menos 1 réplica del servicio de reservas permanezca activa.
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: reservas

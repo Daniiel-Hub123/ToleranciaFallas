@@ -1,1 +1,32 @@
 # Manifiesto Kubernetes para el servicio de inventario
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventario-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventario
+  template:
+    metadata:
+      labels:
+        app: inventario
+    spec:
+      containers:
+      - name: inventario
+        image: toleraciafallas/inventario:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventario-service
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8000
+  selector:
+    app: inventario
