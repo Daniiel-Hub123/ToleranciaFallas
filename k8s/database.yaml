@@ -1,1 +1,13 @@
-# Manifiesto Kubernetes para la Base de Datos (PostgreSQL)
+# Base de Datos (Persistencia de Datos por Servicio)
+#
+# Siguiendo el patrón arquitectónico de "Database per Service" (Base de Datos por Servicio),
+# no se utiliza una base de datos centralizada compartida en este clúster.
+#
+# En su lugar, el servicio de Reservas gestiona su propio almacenamiento local de datos 
+# utilizando SQLite (reservas.db) y un volumen de persistencia persistente montado en 
+# el host (hostPath) configurado dentro de 'reservas.yaml'.
+#
+# Esto garantiza que:
+# 1. Cada servicio sea dueño absoluto de su base de datos.
+# 2. Se evite el Punto Único de Fallo (Single Point of Failure) de una DB central.
+# 3. La persistencia esté garantizada de forma aislada ante reinicios de pods.
