@@ -39,6 +39,20 @@ Este repositorio contiene la arquitectura simplificada de un sistema distribuido
 
 ---
 
+## 🗺️ Diagramas de Arquitectura
+
+### 1. Arquitectura Lógica del Sistema
+Describe el flujo de comunicación, el acoplamiento y el paso de datos entre el API Gateway, los microservicios de negocio y la mensajería asíncrona hacia las bases de datos PostgreSQL:
+
+![Arquitectura Lógica](diagramas/arquitectura.png)
+
+### 2. Distribución Física y Multi-Nodo (Kubernetes)
+Detalla cómo se reparten las réplicas de los microservicios y la base de datos entre el **Nodo 1** y el **Nodo 2** del clúster Kubernetes para lograr alta disponibilidad y sobrevivencia ante caídas físicas de nodos:
+
+![Distribución en Nodos](diagramas/distribucion_nodos.png)
+
+---
+
 ## 🛠️ Requisitos Previos
 
 Antes de desplegar el clúster, asegúrese de tener instalados:
