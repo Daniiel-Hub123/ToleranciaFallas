@@ -106,30 +106,21 @@ kubectl apply -f k8s/pod-anti-affinity-rules.yaml
 
 ---
 
-## 🧪 Ejecución de Pruebas de Caos
+## 📋 Plan de Escenarios de Caos (Parte II)
 
-Los scripts contenidos en la carpeta `caos/` permiten probar de forma aislada e interactiva los mecanismos de tolerancia a fallas implementados en los servicios:
+A continuación se presenta el mapeo técnico de los seis puntos de fallo identificados y el mecanismo de infraestructura utilizado en Kubernetes para simular cada anomalía de forma controlada en el clúster:
 
-### 1. Caída de Disponibilidad (Inventario)
-Inyecta un fallo en el servicio de inventario eliminando de forma abrupta uno de sus Pods en medio de peticiones:
-```bash
-bash caos/inject_crash_inventario.sh
-```
+| Escenario de Fallo | Impacto en el Negocio | Mecanismo de Inyección Técnica en Kubernetes |
+| :--- | :--- | :--- |
+| **1. El Inventario Fantasma** | El Servicio de Inventario se cae completamente (crash) mientras se procesa una reserva. | Eliminación forzada del Pod (`kubectl delete pod -l app=inventario --force --grace-period=0`). |
+| **2. La Pasarela Lenta** | El Servicio de Pagos tarda 20 segundos en responder, dejando conexiones colgadas. | Activación de latencia manual mediante llamada HTTP `/config` en el stub de pagos. |
+| **3. El Diluvio de Peticiones** | Pico de tráfico repentino que satura el API Gateway. | Ejecución de prueba de carga masiva concurrente con `k6` dirigida al NodePort `30080`. |
+| **4. Base de Datos Intermitente** | La conexión a PostgreSQL se pierde intermitentemente (flapping). | Aplicación y borrado cíclico de una NetworkPolicy restrictiva para bloquear el puerto `5432`. |
+| **5. El Correo Perdido** | El Servicio de Notificaciones está inactivo (fallo no crítico). | Escalado temporal del deployment de notificaciones a 0 réplicas (`replicas: 0`). |
+| **6. Condición de Carrera** | Dos usuarios intentan comprar el mismo asiento al mismo tiempo. | Envío simultáneo en paralelo de múltiples peticiones HTTP POST de reservas para un único asiento. |
 
-### 2. Inyección de Latencia (Pagos)
-Configura el servicio simulado de pagos para introducir un retraso artificial de 20 segundos, forzando la activación de timeouts en el backend:
-```bash
-bash caos/inject_latencia_pagos.sh
-```
+---
 
-### 3. Prueba de Sobrecarga (API Gateway)
-Genera una ráfaga masiva de tráfico concurrente hacia el Gateway de entrada usando k6 para verificar el funcionamiento del limitador de tasa:
-```bash
-k6 run caos/inject_sobrecarga_k6.js
-```
+## 🧪 Ejecución de Pruebas de Caos (Parte III)
 
-### 4. Caída de Servicio Secundario (Notificaciones)
-Simula el apagado total del servicio de notificaciones escalando sus réplicas a cero para probar la degradación elegante:
-```bash
-bash caos/inject_caida_correo.sh
-```
+Los scripts contenidos en la carpeta `caos/` permitirán probar de forma aislada e interactiva los mecanismos de tolerancia a fallas en la siguiente etapa de la práctica (Parte III).
