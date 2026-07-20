@@ -87,6 +87,12 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 
 ---
 
+# en una segunda terminal para tener acceso al api-gateway
+minikube service api-gateway-service --url
+# guardar la direccion en una variable de entorno
+$GATEWAY_URL = "http://[IP_ADDRESS]"
+
+
 ### 2. Caso 1: El Inventario Fantasma (Reintentos) (Integrante A)
 * **Petición Normal (Antes del fallo):**
   ```powershell
@@ -97,8 +103,8 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 * **Inyección de la Falla:**
   En una segunda terminal, ejecute el script de caos para tumbar el pod de inventario:
   ```powershell
-  # En PowerShell:
-  bash caos/inject_crash_inventario.sh
+  # En Windows (PowerShell):
+  .\caos\inject_crash_inventario.ps1
 
   # O en Git Bash / Linux:
   ./caos/inject_crash_inventario.sh
@@ -134,8 +140,8 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 * **Inyección del Caos:**
   En su terminal principal, ejecute el script de caos para activar la latencia de pagos (no requiere port-forward previo):
   ```powershell
-  # En PowerShell:
-  bash caos/inject_latencia_pagos.sh on
+  # En Windows (PowerShell):
+  .\caos\inject_latencia_pagos.ps1 -Action on
 
   # O en Git Bash / Linux:
   ./caos/inject_latencia_pagos.sh on
@@ -164,8 +170,8 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 * **Recuperación:**
   Desactive el modo latencia en el servicio de pagos usando el script de caos:
   ```powershell
-  # En PowerShell:
-  bash caos/inject_latencia_pagos.sh off
+  # En Windows (PowerShell):
+  .\caos\inject_latencia_pagos.ps1 -Action off
 
   # O en Git Bash / Linux:
   ./caos/inject_latencia_pagos.sh off
@@ -200,8 +206,8 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 * **Inyección del Caos:**
   Simule la desconexión total del servicio de notificaciones usando el script de caos:
   ```powershell
-  # En PowerShell:
-  bash caos/inject_caida_correo.sh down
+  # En Windows (PowerShell):
+  .\caos\inject_caida_correo.ps1 -Action down
 
   # O en Git Bash / Linux:
   ./caos/inject_caida_correo.sh down
@@ -228,8 +234,8 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 * **Recuperación:**
   Restaure el servicio de notificaciones usando el script de caos:
   ```powershell
-  # En PowerShell:
-  bash caos/inject_caida_correo.sh up
+  # En Windows (PowerShell):
+  .\caos\inject_caida_correo.ps1 -Action up
 
   # O en Git Bash / Linux:
   ./caos/inject_caida_correo.sh up
