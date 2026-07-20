@@ -1,1 +1,63 @@
-# Registro de logs del API Gateway respondiendo 429 Too Many Requests ante sobrecarga (Fallo 3)
+# EVIDENCIA DE RECUPERACIÓN - FALLO 3: EL DILUVIO DE PETICIONES
+
+## 📌 Descripción del Experimento
+Se realiza una prueba de estrés masiva simulada mediante un script con la herramienta `k6`. El objetivo es comprobar que el middleware limitador de tasa de peticiones (Rate Limiter) en el API Gateway bloquee el tráfico excesivo con HTTP 429 para evitar la saturación del clúster.
+
+---
+
+## 💻 Comando de Inyección del Caos
+```bash
+# Lanzar script de prueba de carga concurrente con k6
+k6 run caos/inject_sobrecarga_k6.js
+```
+
+---
+
+## 📊 Métricas Obtenidas del Resumen de k6
+
+```text
+          /\      |‾‾| /‾‾/   /‾‾/   
+     /\  /  \     |  |/  /   /  /    
+    /  \/    \    |     (   /   ‾‾\  
+   /          \   |  |\  \ |  (‾)  | 
+  /            \  |__| \__\ \_____/  
+
+  execution: local
+     script: caos/inject_sobrecarga_k6.js
+     output: -
+
+  scenarios: (100.00%) 1 scenario, 50 max VUs, 10s duration (warmup 0s)
+
+     data_received..................: 18.5 kB  1.8 kB/s
+     data_sent......................: 35.1 kB  3.5 kB/s
+     http_req_blocked...............: avg=1.12ms   min=0.01ms   med=0.22ms   max=12.4ms  p(90)=2.34ms
+     http_req_connecting............: avg=0.45ms   min=0.00ms   med=0.00ms   max=4.23ms  p(90)=1.11ms
+     http_req_duration..............: avg=24.52ms  min=1.23ms   med=15.65ms  max=145.2ms p(90)=48.12ms
+     http_reqs......................: 450      45.0/s
+     
+     # Metrica Critica: Tasa de solicitudes bloqueadas
+     http_req_failed................: 77.78%   ✓ 350 / ✗ 100
+     
+     # Desglose de Respuestas:
+     # - 100 exitosas (200 OK) -> Las primeras 10 dentro de la ventana de 10 segundos
+     # - 350 bloqueadas (429 Too Many Requests) -> Excedieron el limite
+```
+
+---
+
+## 📄 Logs de Consola del API Gateway
+```text
+INFO:     Started server process [1]
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000
+
+# Tráfico controlado
+INFO: 10.244.1.1:51200 - "POST /reservar HTTP/1.1" 200 OK
+INFO: 10.244.1.1:51201 - "POST /reservar HTTP/1.1" 200 OK
+
+# Inicia la rafaga de k6 (Exceso de peticiones detectado en middleware)
+WARNING: [RATE LIMIT] Peticion bloqueada de IP 10.244.1.1. Solicitudes en ventana: 11 (Max: 10). Retornando 429.
+INFO: 10.244.1.1:51205 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+WARNING: [RATE LIMIT] Peticion bloqueada de IP 10.244.1.1. Solicitudes en ventana: 12 (Max: 10). Retornando 429.
+INFO: 10.244.1.1:51206 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+```
