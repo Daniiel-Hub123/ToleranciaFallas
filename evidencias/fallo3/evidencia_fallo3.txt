@@ -1,25 +1,25 @@
 # EVIDENCIA DE RECUPERACIÓN - FALLO 3: EL DILUVIO DE PETICIONES
 
-## 📌 Descripción del Experimento
+## Descripción del Experimento
 Se realiza una prueba de estrés masiva simulada mediante un script con la herramienta `k6`. El objetivo es comprobar que el middleware limitador de tasa de peticiones (Rate Limiter) en el API Gateway bloquee el tráfico excesivo con HTTP 429 para evitar la saturación del clúster.
 
 ---
 
-## 💻 Comando de Inyección del Caos
+## Comando de Inyección del Caos
 ```bash
 k6 run -e TARGET_URL="$GATEWAY_URL/reservar" caos/inject_sobrecarga_k6.js
 ```
 
 ---
 
-## 📊 Métricas Obtenidas del Resumen Real de k6
+## Métricas Obtenidas del Resumen Real de k6
 
 ```text
           /\      Grafana   /‾‾/  
      /\  /  \     |\  __   /  /   
     /  \/    \    | |/ /  /   ‾‾\ 
    /          \   |   (  |  (‾)  |
-  /            \  |_|\_\  \_____/ 
+  / __________ \  |_|\_\  \_____/ 
 
   execution: local
      script: caos/inject_sobrecarga_k6.js
@@ -31,41 +31,45 @@ k6 run -e TARGET_URL="$GATEWAY_URL/reservar" caos/inject_sobrecarga_k6.js
   █ TOTAL RESULTS 
 
     HTTP
-    http_req_duration..............: avg=26.34ms  min=1.03ms   med=21.26ms  max=1.76s p(90)=43.88ms  p(95)=45.89ms
-      { expected_response:true }...: avg=557.37ms min=350.36ms med=442.36ms max=1.76s p(90)=659.53ms p(95)=1.21s  
+    http_req_duration..............: avg=25.53ms  min=1.05ms   med=23.53ms  max=598.69ms p(90)=41.02ms  p(95)=46.81ms 
+      { expected_response:true }...: avg=420.06ms min=286.88ms med=372.94ms max=598.69ms p(90)=530.25ms p(95)=564.47ms
     
-    # Metrica Critica: Tasa de solicitudes bloqueadas (HTTP 429)
-    http_req_failed................: 99.15% 1178 out of 1188
-    http_reqs......................: 1188   117.315649/s
+    # Métrica Crítica: Tasa de solicitudes bloqueadas (HTTP 429)
+    http_req_failed................: 99.16% 1190 out of 1200
+    http_reqs......................: 1200   118.301804/s
 
     EXECUTION
-    iteration_duration.............: avg=127.05ms min=101.23ms med=121.76ms max=1.86s p(90)=144.85ms p(95)=147.2ms
-    iterations.....................: 1188   117.315649/s
+    iteration_duration.............: avg=126.11ms min=101.21ms med=123.95ms max=700.48ms p(90)=141.43ms p(95)=147.57ms
+    iterations.....................: 1200   118.301804/s
     vus............................: 15     min=15           max=15
     vus_max........................: 15     min=15           max=15
 
     NETWORK
-    data_received..................: 229 kB 23 kB/s
-    data_sent......................: 188 kB 19 kB/s
+    data_received..................: 231 kB 23 kB/s
+    data_sent......................: 190 kB 19 kB/s
 ```
 
 ---
 
-## 📄 Logs Reales de Consola del API Gateway (`kubectl logs -l app=api-gateway --tail=40`)
+## Logs Reales de Consola del API Gateway (`kubectl logs -l app=api-gateway --tail=40`)
 ```text
-INFO:     192.168.49.2:59449 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:32169 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:1904 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:34959 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:17751 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:22598 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:38169 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:31210 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:34225 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:22682 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:12853 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:58755 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:1132 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:16187 - "POST /reservar HTTP/1.1" 429 Too Many Requests
-INFO:     192.168.49.2:59937 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:44828 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:35424 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:28105 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:24460 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:19408 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:59801 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:45661 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:64873 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:40771 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:17422 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:34977 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:5761 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:27970 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:48015 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:44828 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:59512 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:35424 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168.49.2:28105 - "POST /reservar HTTP/1.1" 429 Too Many Requests
+INFO:     192.168... (truncated for brevity)
 ```

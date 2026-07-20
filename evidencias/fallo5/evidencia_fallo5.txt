@@ -1,11 +1,11 @@
 # EVIDENCIA DE RECUPERACIÓN - FALLO 5: EL CORREO PERDIDO
 
-## 📌 Descripción del Experimento
+## Descripción del Experimento
 Se simula el apagado total del servicio de Notificaciones (despacho de correos de confirmación) reduciendo sus réplicas a cero. Al ser un servicio no crítico para el negocio, el flujo central de compra en Reservas debe completarse con éxito, persistir la transacción en base de datos y retornar una respuesta exitosa degradada (Fallback) informando al cliente que el correo queda en cola.
 
 ---
 
-## 💻 Comando de Inyección del Caos
+## Comando de Inyección del Caos
 ```bash
 # Apagar por completo el microservicio de notificaciones escalando sus replicas a 0
 kubectl scale deployment/notificaciones-deployment --replicas=0
@@ -13,21 +13,78 @@ kubectl scale deployment/notificaciones-deployment --replicas=0
 
 ---
 
-## 📄 Logs Reales de Consola del Servicio de Reservas (`kubectl logs -l app=reservas --tail=30`)
+## Logs Reales de Consola del Servicio de Reservas (`kubectl logs -l app=reservas --tail=30`)
 ```text
+[DB STARTUP] Base de datos de Reservas inicializada con éxito.
+INFO:     10.244.1.3:33898 - "POST /reservar HTTP/1.1" 500 Internal Server Error
+INFO:     10.244.1.3:33922 - "POST /reservar HTTP/1.1" 500 Internal Server Error
+INFO:     10.244.1.3:44618 - "POST /reservar HTTP/1.1" 500 Internal Server Error
+INFO:     10.244.1.3:32904 - "POST /reservar HTTP/1.1" 500 Internal Server Error
+[DB ERROR] No se pudo persistir la reserva en PostgreSQL: duplicate key value violates unique constraint "reservas_pkey"
+DETAIL:  Key (id)=(RES-1784564919977) already exists.
+
+[DB ERROR] No se pudo persistir la reserva en PostgreSQL: duplicate key value violates unique constraint "reservas_pkey"
+DETAIL:  Key (id)=(RES-1784564919988) already exists.
+
+INFO:     10.244.1.3:50988 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:50980 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:51030 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:51048 - "POST /reservar HTTP/1.1" 200 OK
+[FALLBACK LOG] No se pudo enviar el correo de confirmación. Detalle: 
+INFO:     10.244.1.3:51034 - "POST /reservar HTTP/1.1" 200 OK
 [FALLBACK LOG] No se pudo enviar el correo de confirmación. Detalle: All connection attempts failed
 INFO:     10.244.1.3:36606 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45268 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45214 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45252 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45294 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45262 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45238 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45270 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45310 - "POST /reservar HTTP/1.1" 200 OK
+[FALLBACK LOG] No se pudo enviar el correo de confirmación. Detalle: All connection attempts failed
+INFO:     10.244.1.3:41218 - "POST /reservar HTTP/1.1" 200 OK
+Is the server running on that host and accepting TCP/IP connections?
+
+[DB STARTUP] Esperando a PostgreSQL (Intento 8/10)... Error: connection to server at "database-service" (10.104.33.159), port 5432 failed: Connection refused
+Is the server running on that host and accepting TCP/IP connections?
+
+[DB STARTUP] Esperando a PostgreSQL (Intento 9/10)... Error: connection to server at "database-service" (10.104.33.159), port 5432 failed: Connection refused
+Is the server running on that host and accepting TCP/IP connections?
+
+[DB STARTUP] Esperando a PostgreSQL (Intento 10/10)... Error: connection to server at "database-service" (10.104.33.159), port 5432 failed: Connection refused
+Is the server running on that host and accepting TCP/IP connections?
+
+[DB STARTUP] Error al inicializar esquema (Intento 1/5): connection to server at "database-service" (10.104.33.159), port 5432 failed: Connection refused
+Is the server running on that host and accepting TCP/IP connections?
+
+[DB STARTUP] Error al inicializar esquema (Intento 2/5): connection to server at "database-service" (10.104.33.159), port 5432 failed: Connection refused
+Is the server running on that host and accepting TCP/IP connections?
+
+[DB STARTUP] Base de datos de Reservas inicializada con éxito.
+INFO:     10.244.1.3:33900 - "POST /reservar HTTP/1.1" 500 Internal Server Error
+INFO:     10.244.1.3:33908 - "POST /reservar HTTP/1.1" 500 Internal Server Error
+INFO:     10.244.1.3:58508 - "POST /reservar HTTP/1.1" 500 Internal Server Error
+INFO:     10.244.1.3:36434 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:51038 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:50998 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:51022 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:51050 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:51010 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:54172 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45286 - "POST /reservar HTTP/1.1" 200 OK
+INFO:     10.244.1.3:45228 - "POST /reservar HTTP/1.1" 200 OK
 ```
 
 ---
 
-## 📈 Métrica de Éxito
+## Métrica de Éxito
 * **Comportamiento Esperado:** La reserva del usuario se registra de forma exitosa. El cliente recibe HTTP 200 en lugar de un HTTP 500 debido a la caída de las alertas de correo.
 * **Resultado Obtenido en PowerShell (JSON de Respuesta):**
   ```json
   {
     "status": "Reserva Completada",
-    "reserva_id": "RES-1784565106752",
+    "reserva_id": "RES-1784566685405",
     "asiento_id": "asiento_4",
     "notificacion_estado": "Pendiente de reenvío en background"
   }
