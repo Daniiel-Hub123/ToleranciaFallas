@@ -19,15 +19,19 @@ cd C:\ruta\al\proyecto\ToleranciaFallas
 # Nota: Si el comando da un error por clúster existente de un solo nodo, ejecute primero 'minikube delete' para reiniciar de cero, o agregue el segundo nodo en caliente usando 'minikube node add'
 minikube start --nodes 2
 
-# 3. Vincular el entorno de Docker al daemon del clúster Minikube
-& minikube -p minikube docker-env | Invoke-Expression
-
-# 4. Construir las imágenes de los microservicios en el clúster
+# 3. Construir las imágenes en tu Docker local (Windows)
 docker build -t toleraciafallas/api-gateway:latest ./src/api-gateway
 docker build -t toleraciafallas/reservas:latest ./src/reservas
 docker build -t toleraciafallas/inventario:latest ./src/inventario
 docker build -t toleraciafallas/pagos:latest ./src/pagos
 docker build -t toleraciafallas/notificaciones:latest ./src/notificaciones
+
+# 4. Cargar las imágenes compiladas al clúster (Esto las copia a todos los nodos del clúster multi-nodo automáticamente)
+minikube image load toleraciafallas/api-gateway:latest
+minikube image load toleraciafallas/reservas:latest
+minikube image load toleraciafallas/inventario:latest
+minikube image load toleraciafallas/pagos:latest
+minikube image load toleraciafallas/notificaciones:latest
 
 # 5. Desplegar los manifiestos en orden
 kubectl apply -f k8s/database.yaml
