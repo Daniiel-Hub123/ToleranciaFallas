@@ -89,4 +89,4 @@ INFO:     10.244.1.3:45228 - "POST /reservar HTTP/1.1" 200 OK
     "notificacion_estado": "Pendiente de reenvío en background"
   }
   ```
-  *(Nota que el estado de la notificación cambió a "Pendiente de reenvío en background" de manera segura, sin colapsar el sistema de reservas).*
+  *(El estado de la notificación cambió a "Pendiente de reenvío en background" de manera segura, sin colapsar el sistema de reservas).*

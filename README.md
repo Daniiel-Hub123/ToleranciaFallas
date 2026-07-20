@@ -46,39 +46,49 @@ Detalla el flujo lógico de comunicación (HTTP/REST y SQL) entre todos los comp
 
 ![Arquitectura y Distribución del Sistema](diagramas/arquitectura.png)
 
+#### Distribución de Pods por Nodo
+
+| Nodo 1: `minikube` (Host A) | Nodo 2: `minikube-m02` (Host B) |
+| :--- | :--- |
+| **API Gateway** (1 Réplica) | **Base de Datos (PostgreSQL)** (1 Réplica) |
+| **Servicio Reservas R-1** (Réplica 1) | **Servicio Reservas R-2** (Réplica 2) |
+| **Servicio Inventario** (1 Réplica) | **Servicio Notificaciones Stub** (1 Réplica) |
+| **Servicio Pagos Stub** (1 Réplica) | |
+
+Esta distribución garantiza la alta disponibilidad del servicio crítico de reservas mediante reglas de *Pod Anti-Affinity*, dividiendo sus réplicas de forma balanceada y aislando los servicios complementarios.
+
 ---
 
 ## 🛠️ Requisitos Previos
 
-Antes de desplegar el clúster, asegúrese de tener instalados:
-* [Docker](https://www.docker.com/) o similar.
+Antes de realizar el despliegue del clúster, se requiere contar con las siguientes herramientas instaladas:
+* [Docker](https://www.docker.com/) o un motor de contenedores compatible.
 * [Kubernetes CLI (kubectl)](https://kubernetes.io/docs/tasks/tools/).
 * Un orquestador local como [Minikube](https://minikube.sigs.k8s.io/) o [Kind](https://kind.sigs.k8s.io/).
-* [k6](https://k6.io/) (para la inyección de sobrecarga).
+* [k6](https://k6.io/) (para la ejecución de las pruebas de sobrecarga).
 
 ---
 
 ## 🚀 Despliegue de la Infraestructura
 
-### 1. Iniciar un Clúster Multi-Nodo
-Para simular el entorno distribuido, inicialice su clúster local con al menos **2 nodos**:
+Para realizar el despliegue del sistema completo desde cero, se deben seguir los siguientes pasos en la consola:
+
+### 1. Limpieza y Creación del Clúster Multi-Nodo
+Con el fin de iniciar en un entorno limpio y garantizar la simulación distribuida, se elimina cualquier instancia previa y se inicializa el clúster local con **2 nodos**:
 
 ```bash
-# Ejemplo con Minikube
-minikube start --nodes 2
+# Eliminación del clúster actual
+minikube delete
 
-# Ejemplo con Kind
-# (Asegúrese de proveer un archivo de configuración multi-nodo en Kind si aplica)
+# Inicialización del clúster con exactamente 2 nodos
+minikube start --nodes 2
 ```
 
-### 2. Construir las Imágenes de los Microservicios
-Configure su terminal para usar el daemon de Docker del clúster local y compile cada microservicio:
+### 2. Construcción de Imágenes de los Microservicios
+Se compilan las imágenes Docker de cada microservicio en el entorno local:
 
 ```bash
-# Para Minikube:
-eval $(minikube docker-env)
-
-# Compilación de imágenes
+# Construcción de imágenes locales
 docker build -t toleraciafallas/api-gateway:latest ./src/api-gateway
 docker build -t toleraciafallas/reservas:latest ./src/reservas
 docker build -t toleraciafallas/inventario:latest ./src/inventario
@@ -86,23 +96,45 @@ docker build -t toleraciafallas/pagos:latest ./src/pagos
 docker build -t toleraciafallas/notificaciones:latest ./src/notificaciones
 ```
 
-### 3. Aplicar Manifiestos de Kubernetes
-Despliegue todos los servicios en el clúster:
+### 3. Carga de Imágenes en el Clúster Multi-Nodo
+Para que las imágenes construidas localmente estén disponibles en todos los nodos de Minikube sin necesidad de un registro (registry) externo, se realiza la carga al clúster:
 
 ```bash
-# Desplegar almacenamiento y base de datos
+# Carga de imágenes en el clúster Minikube
+minikube image load toleraciafallas/api-gateway:latest
+minikube image load toleraciafallas/reservas:latest
+minikube image load toleraciafallas/inventario:latest
+minikube image load toleraciafallas/pagos:latest
+minikube image load toleraciafallas/notificaciones:latest
+```
+
+### 4. Aplicación de Manifiestos de Kubernetes
+Se despliegan todos los manifiestos YAML en el orden correspondiente:
+
+```bash
+# Despliegue de la base de datos PostgreSQL
 kubectl apply -f k8s/database.yaml
 
-# Desplegar los microservicios del sistema
+# Despliegue de los servicios del sistema
 kubectl apply -f k8s/api-gateway.yaml
 kubectl apply -f k8s/reservas.yaml
 kubectl apply -f k8s/inventario.yaml
 kubectl apply -f k8s/pagos.yaml
 kubectl apply -f k8s/notificaciones.yaml
 
-# Aplicar las políticas de afinidad para distribución multi-nodo
+# Aplicación de las reglas de anti-afinidad y asignación de nodos
 kubectl apply -f k8s/pod-anti-affinity-rules.yaml
 ```
+
+### 5. Exposición del API Gateway y Obtención de la URL de Acceso
+Para interactuar con el sistema a través del API Gateway expuesto, se genera la URL del túnel de acceso:
+
+```bash
+# Obtención de la dirección del servicio expuesto
+minikube service api-gateway-service --url
+```
+
+La dirección resultante de este comando debe ser asignada a la variable `$GATEWAY_URL` en las terminales de prueba.
 
 ---
 
@@ -123,4 +155,4 @@ A continuación se presenta el mapeo técnico de los seis puntos de fallo identi
 
 ## 🧪 Ejecución de Pruebas de Caos (Parte III)
 
-Los scripts contenidos en la carpeta `caos/` permitirán probar de forma aislada e interactiva los mecanismos de tolerancia a fallas en la siguiente etapa de la práctica (Parte III).
+Los scripts contenidos en la carpeta `caos/` permiten probar de forma aislada, automatizada e interactiva los mecanismos de tolerancia a fallas en la siguiente etapa de la práctica (Parte III). Estos scripts se encuentran disponibles tanto en formato `.sh` para entornos Unix/Git Bash como en formato `.ps1` para Windows PowerShell.
