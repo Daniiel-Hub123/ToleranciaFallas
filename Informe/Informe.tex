@@ -1,0 +1,228 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{xcolor}
+
+% Configuración de márgenes
+\geometry{left=2.5cm,right=2.5cm,top=3cm,bottom=3cm}
+
+% Configuración de colores para código (listings)
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=pythonstyle}
+
+\title{
+    \textbf{Informe Técnico: Análisis y Diseño de Resiliencia}\\
+    \large Práctica de Tolerancia a Fallas en Microservicios
+}
+\author{
+    \textbf{Integrante 1:} Nombre Apellido \\
+    \textbf{Integrante 2:} Nombre Apellido \\
+    \vspace{0.5cm}\\
+    Curso de Sistemas Distribuidos \\
+    Universidad/Institución
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+Este informe técnico aborda el análisis teórico y diseño de soluciones a nivel de producción para los dos escenarios de fallo que no fueron implementados en el código práctico de la arquitectura del clúster. 
+
+Los fallos analizados bajo fundamentos de sistemas distribuidos y resiliencia en este documento son:
+\begin{itemize}
+    \item \textbf{Fallo 4: Base de Datos Intermitente (Conectividad)}
+    \item \textbf{Fallo 6: Condición de Carrera (Consistencia)}
+\end{itemize}
+
+---
+
+\section{Análisis de Fallo 4: Base de Datos Intermitente (Conectividad)}
+
+\subsection{Explicación Teórica y Fundamentos Distribuidos}
+% Pauta de redacción:
+% Explique el fallo utilizando conceptos teóricos de conectividad y redes.
+% Detalle cómo las intermitencias físicas de red (pérdida de paquetes, latencia transitoria, fallos de handshake) 
+% o la saturación del pool de conexiones del socket de base de datos impiden la persistencia.
+% Relacione este comportamiento con los conceptos de fallos transitorios vs permanentes.
+
+Escriba aquí la explicación teórica...
+
+\subsection{Relación con Clases e Investigación MLR}
+% Pauta de redacción:
+% Relacione las intermitencias con las lecturas académicas del MLR o las diapositivas de clase.
+% Explique la relevancia del manejo de fallos transitorios mediante patrones defensivos.
+
+Escriba aquí la relación con la literatura...
+
+\subsection{Solución Propuesta a Nivel de Producción}
+% Pauta de redacción:
+% Proponga una arquitectura o solución técnica detallada de nivel producción.
+% Sugerencias:
+% 1. Mecanismo de Reintentos con Backoff Exponencial y Jitter (evitar el efecto "Thundering Herd").
+% 2. Implementación del Patrón Transactional Outbox para desacoplar escrituras en base de datos.
+% 3. Uso de un Connection Pooler (como PgBouncer para PostgreSQL) para mitigar la sobrecarga de conexiones.
+% 4. Idempotencia en API mediante llaves de idempotencia (Idempotency Keys).
+
+Escriba aquí la solución de producción propuesta...
+
+\subsection{Pseudocódigo o Diagrama de Solución}
+A continuación se presenta el pseudocódigo que ilustra la implementación de reintentos con backoff exponencial y jitter en la conexión de base de datos:
+
+\begin{lstlisting}[language=Python, caption=Pseudocódigo de reconexión y reintentos con Jitter]
+import time
+import random
+
+def conectar_con_backoff(max_intentos=5, base_delay=1.0, max_delay=30.0):
+    intento = 0
+    while intento < max_intentos:
+        try:
+            # Intentar conexion a PostgreSQL
+            db = conectar_postgres()
+            return db
+        except Exception as e:
+            intento += 1
+            if intento == max_intentos:
+                raise e
+            # Calcular delay exponencial con jitter aleatorio
+            temp = min(max_delay, base_delay * (2 ** intento))
+            sleep_time = temp / 2 + random.uniform(0, temp / 2)
+            print(f"Error de conexion. Reintentando en {sleep_time:.2f} segundos...")
+            time.sleep(sleep_time)
+\end{lstlisting}
+
+% Para incluir un diagrama visual en formato imagen, descomente las siguientes lineas:
+% \begin{figure}[h!]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{diagramas/solucion_fallo4.png}
+%     \caption{Flujograma del patrón Transactional Outbox para resiliencia de datos.}
+%     \label{fig:outbox}
+% \end{figure}
+
+---
+
+\section{Análisis de Fallo 6: Condición de Carrera (Consistencia)}
+
+\subsection{Explicación Teórica y Fundamentos Distribuidos}
+% Pauta de redacción:
+% Explique por qué se genera una condición de carrera cuando múltiples peticiones leen y modifican el mismo recurso (asiento).
+% Relacione este fallo directamente con el Teorema CAP (Consistencia, Disponibilidad, Tolerancia a Particiones).
+% Explique cómo la falta de sincronización distribuye inconsistencias (ej: doble venta de boleto).
+
+Escriba aquí la explicación teórica...
+
+\subsection{Relación con Clases e Investigación MLR}
+% Pauta de redacción:
+% Relacione la inconsistencia y los modelos de aislamiento de transacciones SQL (Read Committed, Serializable) 
+% con lo visto en las clases teóricas de concurrencia distribuida.
+
+Escriba aquí la relación con la literatura...
+
+\subsection{Solución Propuesta a Nivel de Producción}
+% Pauta de redacción:
+% Describa la solución ideal para producción.
+% Sugerencias:
+% 1. Bloqueo Pesimista (Pessimistic Locking): SELECT ... FOR UPDATE en la fila del asiento en SQL.
+% 2. Patrón de Reserva Temporal (Holds) con expiración (ej: Redis TTL de 10 minutos).
+% 3. Bloqueo Optimista (Optimistic Locking) mediante versionamiento de registros.
+
+Escriba aquí la solución de producción propuesta...
+
+\subsection{Pseudocódigo o Diagrama de Solución}
+A continuación se ilustra mediante pseudocódigo la solución utilizando bloqueo pesimista a nivel de base de datos para asegurar el procesamiento atómico de la reserva:
+
+\begin{lstlisting}[language=Python, caption=Pseudocódigo de control de concurrencia con Bloqueo Pesimista]
+# Flujo atomico de reserva en base de datos PostgreSQL
+def procesar_reserva_concurrente(db_connection, asiento_id, usuario_id):
+    with db_connection.cursor() as cursor:
+        # 1. Bloquear la fila del asiento especifico (FOR UPDATE)
+        cursor.execute(
+            "SELECT disponible FROM asientos WHERE id = %s FOR UPDATE", 
+            (asiento_id,)
+        )
+        row = cursor.fetchone()
+        
+        if row and row[0] is True: # Si esta disponible
+            # 2. Descontar del inventario y registrar la reserva
+            cursor.execute(
+                "UPDATE asientos SET disponible = FALSE WHERE id = %s", 
+                (asiento_id,)
+            )
+            cursor.execute(
+                "INSERT INTO reservas (id, asiento_id, usuario_id, estado) VALUES (%s, %s, %s, 'CONFIRMADA')",
+                (generar_uuid(), asiento_id, usuario_id)
+            )
+            db_connection.commit()
+            return {"status": "Reserva exitosa"}
+        else:
+            db_connection.rollback()
+            return {"status": "Fallo: Asiento ya reservado"}
+\end{lstlisting}
+
+% Para incluir un diagrama de secuencia de concurrencia en formato imagen, descomente las siguientes lineas:
+% \begin{figure}[h!]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{diagramas/solucion_fallo6.png}
+%     \caption{Diagrama de secuencia de la reserva atómica con bloqueo pesimista.}
+%     \label{fig:concurrencia}
+% \end{figure}
+
+---
+
+\section{Conclusiones}
+% Pauta de redacción:
+% Redacte las conclusiones generales del análisis y su importancia en sistemas de reservas de alta concurrencia.
+
+Escriba aquí las conclusiones...
+
+---
+
+\section{Referencias Bibliográficas}
+% Pauta de redacción:
+% Cite la literatura académica de su investigación MLR y diapositivas de clase correspondientes.
+\begin{thebibliography}{9}
+    \bibitem{cap} 
+    Fox, A., \& Brewer, E. A. (1999). \textit{Harvest, yield, and scalable tolerant systems}. Proceedings of the Seventh Workshop on Hot Topics in Operating Systems.
+    
+    \bibitem{mlr} 
+    Referencia a tu documento MLR...
+    
+    \bibitem{clase}
+    Diapositivas de clase: Tema de Tolerancia a Fallas y Concurrencia Distribuida.
+\end{thebibliography}
+
+\end{document}
