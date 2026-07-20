@@ -8,6 +8,7 @@
 \usepackage{geometry}
 \usepackage{booktabs}
 \usepackage{xcolor}
+\usepackage{tabularx}
 
 % Configuración de márgenes
 \geometry{left=2.5cm,right=2.5cm,top=3cm,bottom=3cm}
@@ -49,7 +50,7 @@
     {\fontsize{18}{22}\selectfont\textbf{UNIVERSIDAD POLITÉCNICA SALESIANA}} \\[0.5cm]
     {\fontsize{14}{18}\selectfont Carrera de Ingeniería en Ciencias de la Computación} \\[1.5cm]
     
-    \includegraphics[width=0.4\textwidth]{diagramas/arquitectura.png} \\[1.5cm]
+    \includegraphics[width=0.55\textwidth]{../diagramas/arquitectura.png} \\[1.5cm]
     
     {\fontsize{16}{20}\selectfont\textbf{INFORME TÉCNICO: ANÁLISIS Y DISEÑO DE RESILIENCIA EN MICROSERVICIOS}} \\[0.5cm]
     {\fontsize{12}{14}\selectfont Práctica de Tolerancia a Fallas y Caos en Clústeres Distribuidos} \\[2.5cm]
@@ -90,19 +91,19 @@ El sistema implementado corresponde a una plataforma distribuida de reservas de 
 \end{enumerate}
 
 \subsection{Distribución en Clúster Kubernetes Multinodo}
-Para cumplir con la tolerancia a fallos en infraestructura real, se desplegó un clúster Kubernetes multinodo local utilizando Minikube (`--nodes 2`). La distribución de los pods se forzó determinísticamente mediante reglas de afinidad y selectores de host (`nodeSelector`) en los manifiestos YAML de acuerdo al diagrama de arquitectura planteado.
+Para cumplir con la tolerancia a fallos en infraestructura real, se desplegó un clúster Kubernetes multinodo local utilizando Minikube (\texttt{--nodes 2}). La distribución de los pods se forzó determinísticamente mediante reglas de afinidad y selectores de host (\texttt{nodeSelector}) en los manifiestos YAML de acuerdo al diagrama de arquitectura planteado.
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.95\textwidth]{diagramas/arquitectura.png}
+    \includegraphics[width=0.85\textwidth]{../diagramas/arquitectura.png}
     \caption{Diagrama de Arquitectura de Microservicios distribuido en el clúster multi-nodo de Kubernetes.}
     \label{fig:arquitectura}
 \end{figure}
 
 La distribución física real entre los nodos se configuró de la siguiente manera:
 \begin{itemize}
-    \item \textbf{Nodo 1 (Control Plane / Host A - `minikube`):} Aloja al \textbf{API Gateway}, el \textbf{Servicio de Inventario}, el \textbf{Servicio de Pagos} y una de las réplicas del \textbf{Servicio de Reservas}.
-    \item \textbf{Nodo 2 (Worker / Host B - `minikube-m02`):} Aloja a la \textbf{Base de Datos PostgreSQL}, el \textbf{Servicio de Notificaciones} y la segunda réplica del \textbf{Servicio de Reservas}.
+    \item \textbf{Nodo 1 (Control Plane / Host A - \texttt{minikube}):} Aloja al \textbf{API Gateway}, el \textbf{Servicio de Inventario}, el \textbf{Servicio de Pagos} y una de las réplicas del \textbf{Servicio de Reservas}.
+    \item \textbf{Nodo 2 (Worker / Host B - \texttt{minikube-m02}):} Aloja a la \textbf{Base de Datos PostgreSQL}, el \textbf{Servicio de Notificaciones} y la segunda réplica del \textbf{Servicio de Reservas}.
 \end{itemize}
 
 Esta distribución garantiza la alta disponibilidad del Servicio de Reservas. Si uno de los nodos del clúster falla catastróficamente, el otro nodo cuenta con una réplica activa del servicio capaz de responder al tráfico.
@@ -119,24 +120,24 @@ Para comprobar la resistencia del sistema, se mapearon 6 escenarios teóricos de
     \centering
     \caption{Escenarios de Caos y sus Mecanismos Técnicos de Inyección.}
     \label{tab:caos}
-    \begin{tabular}{lp{6.5cm}p{6cm}}
+    \begin{tabularx}{\textwidth}{lXX}
         \toprule
         \textbf{ID / Escenario de Fallo} & \textbf{Impacto Esperado} & \textbf{Mecanismo de Inyección} \\
         \midrule
-        \textbf{1. Inventario Fantasma} & Caída repentina de conectividad al inventario. & Eliminación forzada del pod (`kubectl delete pod`). \\
-        \textbf{2. Pasarela Lenta} & Latencia extrema (20s) en procesamiento de pagos. & Envío de configuración de caos a través de API REST (`/config`). \\
-        \textbf{3. Diluvio de Peticiones} & Sobrecarga de peticiones simultáneas de compra. & Pruebas de estrés concurrentes automatizadas con \texttt{k6}. \\
+        \textbf{1. Inventario Fantasma} & Caída repentina de conectividad al inventario. & Eliminación forzada del pod (\texttt{kubectl delete pod}). \\
+        \textbf{2. Pasarela Lenta} & Latencia extrema (20s) en procesamiento de pagos. & Envío de configuración de caos a través de API REST (\texttt{/config}). \\
+        \textbf{3. Diluvio de Peticiones} & Sobrecarga de peticiones de compra concurrentes. & Pruebas de estrés concurrentes automatizadas con \texttt{k6}. \\
         \textbf{4. Base de Datos Intermitente} & Intermitencia física y pérdida de persistencia SQL. & Simulación teórica a nivel de producción (Parte V). \\
-        \textbf{5. Correo Perdido} & Caída total del servicio de envío de notificaciones. & Reducción de réplicas a cero (`kubectl scale --replicas=0`). \\
+        \textbf{5. Correo Perdido} & Caída total del servicio de envío de notificaciones. & Reducción de réplicas a cero (\texttt{kubectl scale --replicas=0}). \\
         \textbf{6. Condición de Carrera} & Doble venta del mismo asiento en alta concurrencia. & Simulación teórica a nivel de producción (Parte V). \\
         \bottomrule
-    \end{tabular}
+    \end{tabularx}
 \end{table}
 
 \subsection{Justificación de los 4 Fallos Seleccionados para Implementación}
 Para la fase experimental de resiliencia (Parte III), se seleccionaron los fallos \textbf{1, 2, 3 y 5}. Esta elección cubre un amplio espectro de la clasificación de errores en sistemas distribuidos: caídas de red físicas (Fallo 1), fallos por latencia de servicios de terceros (Fallo 2), sobrecargas perimetrales de tráfico (Fallo 3), y degradación elegante de servicios complementarios no críticos (Fallo 5).
 
----
+\newpage
 
 % ==========================================
 % SECCIÓN 3: IMPLEMENTACIÓN Y EVIDENCIAS
@@ -163,11 +164,28 @@ En la bitácora de Reservas, se aprecia que al inyectar la falla y enviar una re
 [RETRY] Error al conectar a inventario (Intento 3/3): All connection attempts failed. Reintentando en 1s...
 INFO:     10.244.0.3:54992 - "POST /reservar HTTP/1.1" 500 Internal Server Error
 \end{lstlisting}
-*(Nota: Si el pod se recupera antes del tercer intento, la reserva se procesa de forma exitosa y el cliente recibe un HTTP 200 sin percatarse del reinicio).*
+
+\subsubsection{Imágenes de Evidencia del Experimento:}
+A continuación se presentan las capturas reales de la prueba realizada en el clúster:
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.65\textwidth]{../evidencias/fallo1/Reserva.png}
+    \caption{Petición de reserva devuelta tras la simulación de caída de Inventario.}
+    \label{fig:reserva_fallo1}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{../evidencias/fallo1/podsRestart.png}
+    \caption{Kubernetes recreando el pod de inventario en el nodo designado.}
+    \label{fig:pods_fallo1}
+\end{figure}
+
+\newpage
 
 \subsection{Fallo 2: La Pasarela Lenta (Circuit Breaker y Timeout)}
 \subsubsection{Justificación del Patrón:}
-Ante servicios externos lentos (como la pasarela de pagos con latencia de 20s), se aplicó un \textbf{Timeout estricto de 3.0 segundos} combinado con un \textbf{Circuit Breaker en memoria}. Esto evita que el pool de conexiones del Servicio de Reservas se llene de peticiones bloqueadas (previniendo la degradación en cascada). Si se detectan 3 fallos seguidos por timeout, el circuito se abre (`OPEN`) por 30 segundos, devolviendo un error controlado inmediato al cliente sin intentar llamar a pagos.
+Ante servicios externos lentos (como la pasarela de pagos con latencia de 20s), se aplicó un \textbf{Timeout estricto de 3.0 segundos} combinado con un \textbf{Circuit Breaker en memoria}. Esto evita que el pool de conexiones del Servicio de Reservas se llene de peticiones bloqueadas (previniendo la degradación en cascada). Si se detectan 3 fallos seguidos por timeout, el circuito se abre (\texttt{OPEN}) por 30 segundos, devolviendo un error controlado inmediato al cliente sin intentar llamar a pagos.
 
 \subsubsection{Script de Inyección de Caos (PowerShell):}
 El script inyecta la latencia simulada de 20s directamente en el pod de pagos ejecutando un POST interno:
@@ -178,7 +196,7 @@ kubectl exec $podName -- python -c $pyCmd
 \end{lstlisting}
 
 \subsubsection{Logs de Evidencia del Circuit Breaker:}
-Al enviar las peticiones de prueba consecutivas desde CMD, las tres primeras fallan por el timeout de 3 segundos, abriendo el circuito. A partir de la cuarta llamada, el sistema corta la ejecución de inmediato y responde con un error `503 Service Unavailable` indicando la apertura del circuito:
+Al enviar las peticiones de prueba consecutivas, las tres primeras fallan por el timeout de 3 segundos, abriendo el circuito. A partir de la cuarta llamada, el sistema corta la ejecución de inmediato y responde con un error \texttt{503 Service Unavailable} indicando la apertura del circuito:
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize, caption=Logs de Apertura de Circuit Breaker en Reservas]
 INFO:     10.244.0.3:39622 - "POST /reservar HTTP/1.1" 504 Gateway Timeout
 INFO:     10.244.0.3:39646 - "POST /reservar HTTP/1.1" 504 Gateway Timeout
@@ -186,11 +204,34 @@ INFO:     10.244.0.3:60656 - "POST /reservar HTTP/1.1" 504 Gateway Timeout
 INFO:     10.244.0.3:48186 - "POST /reservar HTTP/1.1" 503 Service Unavailable
 INFO:     10.244.0.3:48192 - "POST /reservar HTTP/1.1" 503 Service Unavailable
 \end{lstlisting}
-*(Nota: En la terminal del cliente, la cuarta petición responde instantáneamente en milisegundos con el JSON: `{"detail":"Circuit Breaker is OPEN. Payment gateway temporarily disabled."}`).*
+
+\subsubsection{Imágenes de Evidencia del Experimento:}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{../evidencias/fallo2/latenciaPagos.png}
+    \caption{Activación de latencia de pagos de 20 segundos en el pod.}
+    \label{fig:latencia_fallo2}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{../evidencias/fallo2/Timeout3s.png}
+    \caption{Llamadas que retornan HTTP 504 por Timeout de 3s.}
+    \label{fig:timeout_fallo2}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{../evidencias/fallo2/CircuitBreakerOn.png}
+    \caption{Apertura de Circuit Breaker retornando de inmediato un HTTP 503.}
+    \label{fig:cb_fallo2}
+\end{figure}
+
+\newpage
 
 \subsection{Fallo 3: El Diluvio de Peticiones (Rate Limiting)}
 \subsubsection{Justificación del Patrón:}
-Se implementó un middleware de \textbf{Rate Limiting perimetral} en el API Gateway que limita el consumo concurrente en memoria a un máximo de 10 peticiones cada 10 segundos. Si el tráfico supera este umbral, el Gateway descarta las peticiones excesivas devolviendo de forma rápida un código `HTTP 429 Too Many Requests`.
+Se implementó un middleware de \textbf{Rate Limiting perimetral} en el API Gateway que limita el consumo concurrente en memoria a un máximo de 10 peticiones cada 10 segundos. Si el tráfico supera este umbral, el Gateway descarta las peticiones excesivas devolviendo de forma rápida un código \texttt{HTTP 429 Too Many Requests}.
 
 \subsubsection{Script de Inyección de Caos (k6):}
 Se inyectaron 1200 solicitudes concurrentes con 15 usuarios virtuales (VUs) en un intervalo de 10 segundos:
@@ -212,34 +253,49 @@ INFO:     192.168.49.2:35424 - "POST /reservar HTTP/1.1" 429 Too Many Requests
 INFO:     192.168.49.2:28105 - "POST /reservar HTTP/1.1" 429 Too Many Requests
 \end{lstlisting}
 
+\subsubsection{Imágenes de Evidencia del Experimento:}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.65\textwidth]{../evidencias/fallo3/TooManyRequests.png}
+    \caption{Consola de k6 detallando el bloqueo masivo con HTTP 429.}
+    \label{fig:k6_fallo3}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.65\textwidth]{../evidencias/fallo3/recuperacion.png}
+    \caption{El sistema operando con normalidad (HTTP 200) tras la sobrecarga.}
+    \label{fig:rec_fallo3}
+\end{figure}
+
+\newpage
+
 \subsection{Fallo 5: El Correo Perdido (Degradación Elegante / Fallback)}
 \subsubsection{Justificación del Patrón:}
-El envío de notificaciones es un servicio no crítico para el negocio. Se implementó el patrón de **Degradación Elegante (Graceful Degradation)** con un manejador de excepciones global en Reservas. Si el servicio de notificaciones se apaga por completo, el backend de reservas atrapa el fallo de red, persiste la transacción en PostgreSQL de forma correcta, confirma la compra al cliente con `HTTP 200` y coloca la notificación en estado `"Pendiente de reenvío en background"` para evitar colapsar la reserva.
+El envío de notificaciones es un servicio no crítico para el negocio. Se implementó el patrón de \textbf{Degradación Elegante (Graceful Degradation)} con un manejador de excepciones global en Reservas. Si el servicio de notificaciones se apaga por completo, el backend de reservas atrapa el fallo de red, persiste la transacción en PostgreSQL de forma correcta, confirma la compra al cliente con \texttt{HTTP 200} y coloca la notificación en estado \texttt{``Pendiente de reenvío en background''} para evitar colapsar la reserva.
 
 \subsubsection{Script de Inyección de Caos (PowerShell):}
 \begin{lstlisting}[language=bash, caption=caos/inject\_caida\_correo.ps1]
-# Apagar por completo el microservicio de notificaciones reduciendo sus réplicas a 0
+# Apagar por completo el microservicio de notificaciones reduciendo sus replicas a 0
 kubectl scale deployment/notificaciones-deployment --replicas=0
 \end{lstlisting}
 
 \subsubsection{Evidencia del Log y Respuesta de Fallback:}
 El log del backend confirma la captura del error de red al intentar enviar el correo, pero completando exitosamente el flujo de reserva con HTTP 200:
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize, caption=Logs de Fallback en Notificaciones]
-[FALLBACK LOG] No se pudo enviar el correo de confirmación. Detalle: All connection attempts failed
+[FALLBACK LOG] No se pudo enviar el correo de confirmacion. Detalle: All connection attempts failed
 INFO:     10.244.1.3:36606 - "POST /reservar HTTP/1.1" 200 OK
 \end{lstlisting}
 
-La respuesta JSON recibida en la terminal del cliente demuestra que la compra finalizó con éxito:
-\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, caption=Respuesta JSON del cliente en degradación elegante]
-{
-  "status": "Reserva Completada",
-  "reserva_id": "RES-1784566685405",
-  "asiento_id": "asiento_4",
-  "notificacion_estado": "Pendiente de reenvío en background"
-}
-\end{lstlisting}
+\subsubsection{Imágenes de Evidencia del Experimento:}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../evidencias/fallo5/CapturaFallo5_EstadoPendiente.png}
+    \caption{JSON del cliente mostrando la transacción exitosa y la notificación en estado pendiente.}
+    \label{fig:evidencia_fallo5}
+\end{figure}
 
----
+\newpage
 
 % ==========================================
 % SECCIÓN 4: GUION DE DEMOSTRACIÓN
@@ -248,11 +304,13 @@ La respuesta JSON recibida en la terminal del cliente demuestra que la compra fi
 El guion detallado para ejecutar la validación práctica de resiliencia frente a los evaluadores se encuentra estructurado en el archivo \texttt{GUION\_DEMO.md}. 
 
 Este guion sigue una secuencia rigurosa:
-1. **Fase de Topología:** Visualización del clúster multinodo (`kubectl get nodes -o wide`) demostrando la anti-afinidad del Servicio de Reservas.
-2. **Demostración de Fallo 1:** Ejecución de `.\caos\inject_crash_inventario.ps1` y envío rápido de reserva, mostrando en logs los reintentos automáticos en tiempo real y la auto-recuperación del pod.
-3. **Demostración de Fallo 2:** Ejecución de `.\caos\inject_latencia_pagos.ps1 -Action on`, envío de 8 peticiones consecutivas para forzar la apertura del Circuit Breaker (logs con HTTP 503) y su posterior recuperación (`-Action off`) a estado `CLOSED` (HTTP 200).
-4. **Demostración de Fallo 3:** Lanzamiento de k6 para visualizar el bloqueo por Rate Limiting (HTTP 429) en la terminal del API Gateway.
-5. **Demostración de Fallo 5:** Apagado de notificaciones a 0 réplicas y realización de una reserva exitosa, mostrando el log de Fallback en reservas y el estado `"Pendiente"` en el JSON de salida.
+\begin{enumerate}
+    \item \textbf{Fase de Topología:} Visualización del clúster multinodo (\texttt{kubectl get nodes -o wide}) demostrando la anti-afinidad del Servicio de Reservas.
+    \item \textbf{Demostración de Fallo 1:} Ejecución de \texttt{.\textbackslash caos\textbackslash inject\_crash\_inventario.ps1} y envío rápido de reserva, mostrando en logs los reintentos automáticos en tiempo real y la auto-recuperación del pod.
+    \item \textbf{Demostración de Fallo 2:} Ejecución de \texttt{.\textbackslash caos\textbackslash inject\_latencia\_pagos.ps1 -Action on}, envío de 8 peticiones consecutivas para forzar la apertura del Circuit Breaker (logs con HTTP 503) y su posterior recuperación (\texttt{-Action off}) a estado \texttt{CLOSED} (HTTP 200).
+    \item \textbf{Demostración de Fallo 3:} Lanzamiento de k6 para visualizar el bloqueo por Rate Limiting (HTTP 429) en la terminal del API Gateway.
+    \item \textbf{Demostración de Fallo 5:} Apagado de notificaciones a 0 réplicas y realización de una reserva exitosa, mostrando el log de Fallback en reservas y el estado \texttt{``Pendiente''} en el JSON de salida.
+\end{enumerate}
 
 ---
 
@@ -312,7 +370,7 @@ def conectar_con_backoff_y_jitter(max_intentos=5, base_delay=1.0, max_delay=30.0
 \subsection{Fallo 6: Condición de Carrera (Consistencia)}
 
 \subsubsection{Explicación Teórica y Fundamentos Distribuidos}
-La venta concurrente de asientos limitados introduce un reto clásico de consistencia de datos en sistemas distribuidos. Si dos usuarios leen de forma concurrente el estado de disponibilidad del último asiento disponible (`asiento_10` en estado disponible = `True`) y ambos envían la transacción de compra de forma simultánea, se genera una anomalía de lectura sucia o \textit{Lost Update} (actualización perdida), resultando en una inconsistencia catastrófica: la venta duplicada del mismo boleto físico.
+La venta concurrente de asientos limitados introduce un reto clásico de consistencia de datos en sistemas distribuidos. Si dos usuarios leen de forma concurrente el estado de disponibilidad del último asiento disponible (\texttt{asiento\_10} en estado disponible = \texttt{True}) y ambos envían la transacción de compra de forma simultánea, se genera una anomalía de lectura sucia o \textit{Lost Update} (actualización perdida), resultando en una inconsistencia catastrófica: la venta duplicada del mismo boleto físico.
 
 Relacionado directamente con el \textbf{Teorema CAP} (Brewer \cite{cap}), este fallo demuestra el trade-off entre la Consistencia Fuerte y la Disponibilidad. Para asegurar que la base de datos de inventario permanezca consistente (C), el sistema debe sacrificar latencia bloqueando las peticiones concurrentes para procesarlas de forma estrictamente secuencial, o bien abortar transacciones concurrentes afectando temporalmente la disponibilidad percibida (A).
 
@@ -322,11 +380,11 @@ Kleppmann \cite{kleppmann} detalla en su libro sobre diseño de datos que para p
 \subsubsection{Solución Propuesta a Nivel de Producción}
 Para garantizar consistencia y prevenir de forma absoluta la doble reserva en producción, se proponen tres alternativas de control de concurrencia:
 \begin{enumerate}
-    \item \textbf{Bloqueo Pesimista en SQL (Pessimistic Locking):} Utilizar la sintaxis `SELECT ... FOR UPDATE` al consultar la disponibilidad del asiento en base de datos. Esta instrucción bloquea físicamente la fila del asiento correspondiente en PostgreSQL en un ámbito exclusivo transaccional. Cualquier transacción concurrente que intente leer el estado de esa misma fila se detendrá en espera bloqueada hasta que la primera transacción ejecute un `COMMIT` o `ROLLBACK`.
-    \item \textbf{Bloqueo Optimista (Optimistic Locking):} Adecuado cuando la contención sobre los asientos es baja. Se agrega una columna `version` de tipo entero en la tabla de asientos. Al actualizar, la base de datos verifica que la versión no haya cambiado:
-    `UPDATE asientos SET disponible = FALSE, version = version + 1 WHERE id = :id AND version = :version_leida`.
+    \item \textbf{Bloqueo Pesimista en SQL (Pessimistic Locking):} Utilizar la sintaxis \texttt{SELECT ... FOR UPDATE} al consultar la disponibilidad del asiento en base de datos. Esta instrucción bloquea físicamente la fila del asiento correspondiente en PostgreSQL en un ámbito exclusivo transaccional. Cualquier transacción concurrente que intente leer el estado de esa misma fila se detendrá en espera bloqueada hasta que la primera transacción ejecute un \texttt{COMMIT} o \texttt{ROLLBACK}.
+    \item \textbf{Bloqueo Optimista (Optimistic Locking):} Adecuado cuando la contención sobre los asientos es baja. Se agrega una columna \texttt{version} de tipo entero en la tabla de asientos. Al actualizar, la base de datos verifica que la versión no haya cambiado:
+    \texttt{UPDATE asientos SET disponible = FALSE, version = version + 1 WHERE id = :id AND version = :version\_leida}.
     Si el número de filas afectadas es cero, significa que otra petición concurrente modificó el asiento primero, haciendo que el backend aborte la transacción local e informe al cliente para que elija otro asiento.
-    \item \textbf{Reservas Temporales Distribuidas con Holds en Redis (TTL):} Antes de persistir en PostgreSQL, se adquiere un bloqueo distribuido y rápido sobre la llave del asiento en un almacén en caché en memoria como Redis. La operación se ejecuta de forma atómica (`SET asiento:id:lock usuario_id NX EX 600`), bloqueando el asiento por 10 minutos para dar tiempo a que el usuario complete el pago. Una vez pagado, se consolida la transacción en la base de datos relacional y se libera la llave en Redis.
+    \item \textbf{Reservas Temporales Distribuidas con Holds en Redis (TTL):} Antes de persistir en PostgreSQL, se adquiere un bloqueo distribuido y rápido sobre la llave del asiento en un almacén en caché en memoria como Redis. La operación se ejecuta de forma atómica (\texttt{SET asiento:id:lock usuario\_id NX EX 600}), bloqueando el asiento por 10 minutos para dar tiempo a que el usuario complete el pago. Una vez pagado, se consolida la transacción en la base de datos relacional y se libera la llave en Redis.
 \end{enumerate}
 
 \subsubsection{Pseudocódigo de Reserva Atómica con Bloqueo Pesimista}
