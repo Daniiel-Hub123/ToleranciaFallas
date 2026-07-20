@@ -46,6 +46,17 @@ Detalla el flujo lógico de comunicación (HTTP/REST y SQL) entre todos los comp
 
 ![Arquitectura y Distribución del Sistema](diagramas/arquitectura.png)
 
+#### Distribución de Pods por Nodo
+
+| Nodo 1: `minikube` (Host A) | Nodo 2: `minikube-m02` (Host B) |
+| :--- | :--- |
+| **API Gateway** (1 Réplica) | **Base de Datos (PostgreSQL)** (1 Réplica) |
+| **Servicio Reservas R-1** (Réplica 1) | **Servicio Reservas R-2** (Réplica 2) |
+| **Servicio Inventario** (1 Réplica) | **Servicio Notificaciones Stub** (1 Réplica) |
+| **Servicio Pagos Stub** (1 Réplica) | |
+
+Esta distribución garantiza la alta disponibilidad del servicio crítico de reservas mediante reglas de *Pod Anti-Affinity*, dividiendo sus réplicas de forma balanceada y aislando los servicios complementarios.
+
 ---
 
 ## 🛠️ Requisitos Previos
