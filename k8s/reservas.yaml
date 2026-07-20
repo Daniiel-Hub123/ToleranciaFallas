@@ -27,11 +27,13 @@ spec:
               topologyKey: "kubernetes.io/hostname"
       containers:
       - name: reservas
-        image: toleraciafallas/reservas:latest
+        image: toleraciafallas/reservas:v2
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
         env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
         - name: INVENTARIO_SERVICE_URL
           value: "http://inventario-service:8000"
         - name: PAGOS_SERVICE_URL

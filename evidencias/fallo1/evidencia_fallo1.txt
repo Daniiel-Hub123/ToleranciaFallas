@@ -1,57 +1,14 @@
-# EVIDENCIA DE RECUPERACIÓN - FALLO 1: EL INVENTARIO FANTASMA
-
-## 📌 Descripción del Experimento
-Se simula la caída física abrupta del microservicio de Inventario durante el procesamiento de una reserva. El objetivo es comprobar que el Servicio de Reservas no colapsa y realiza reintentos automáticos de forma exitosa mientras Kubernetes levanta un pod de reemplazo.
-
----
-
-## 💻 Comando de Inyección del Caos
-```bash
-# Eliminar el pod activo de inventario de forma inmediata (simulando un crash de hardware)
-kubectl delete pod -l app=inventario-service --force --grace-period=0
-```
-
----
-
-## 📄 Logs de Consola del Servicio de Reservas
-A continuación se muestran los logs de `reservas-service` obtenidos en tiempo real durante la inyección del fallo:
-
-```text
+[DB STARTUP] Base de datos de Reservas inicializada con éxito.
 INFO:     Started server process [1]
 INFO:     Waiting for application startup.
-[DB STARTUP] Base de datos de Reservas inicializada con éxito.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-
-# Peticion llega en el momento exacto de la caida del pod de Inventario
-INFO:     10.244.1.4:43210 - "POST /reservar HTTP/1.1" 200 OK
-[RETRY LOG] Intento 1 fallido para conectar a Inventario. Error: ConnectError([Errno 111] Connection refused)
-[RETRY LOG] Esperando 1 segundo para reintentar...
-
-[RETRY LOG] Intento 2 fallido para conectar a Inventario. Error: ConnectError([Errno 111] Connection refused)
-[RETRY LOG] Esperando 1 segundo para reintentar...
-
-# En el intento 3, el nuevo pod de reemplazo de Kubernetes ya esta listo
-[RETRY LOG] Intento 3 exitoso. Conexión establecida con Inventario.
-INFO:     Conexión con pagos exitosa. Transaccion: TX-998877
-INFO:     Reserva persistida en SQLite local (reserva_id: RES-1689728401000).
-INFO:     Notificación enviada con éxito.
-[SUCCESS] Transacción completada con éxito tras reintentos.
-```
-
----
-
-## 📈 Métrica de Éxito
-* **Comportamiento Esperado:** Petición HTTP exitosa (HTTP 200) recibida por el cliente.
-* **Resultado Obtenido:**
-  - Código HTTP retornado al cliente: **200 OK**
-  - Contenido de la respuesta:
-    ```json
-    {
-      "status": "Reserva Completada",
-      "reserva_id": "RES-1689728401000",
-      "asiento_id": "asiento_3",
-      "notificacion_estado": "Enviada"
-    }
-    ```
-  - Tiempo total de respuesta: **2.32 segundos** (incluye los 2 segundos de delay de reintentos).
+[RETRY] Error al conectar a inventario (Intento 1/3): All connection attempts failed. Reintentando en 1s...
+[RETRY] Error al conectar a inventario (Intento 2/3): All connection attempts failed. Reintentando en 1s...
+[RETRY] Error al conectar a inventario (Intento 3/3): All connection attempts failed. Reintentando en 1s...
+INFO:     10.244.0.3:54992 - "POST /reservar HTTP/1.1" 500 Internal Server Error
+[DB STARTUP] Base de datos de Reservas inicializada con éxito.
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)

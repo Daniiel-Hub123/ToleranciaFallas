@@ -95,7 +95,8 @@ async def crear_reserva(payload: dict):
                 if res_inv.status_code == 200 and res_inv.json().get("disponible"):
                     inventario_ok = True
                     break
-        except httpx.RequestError:
+        except httpx.RequestError as exc:
+            print(f"[RETRY] Error al conectar a inventario (Intento {intento+1}/3): {exc}. Reintentando en 1s...", flush=True)
             await asyncio.sleep(1) # Delay de reintento simple asíncrono
             
     if not inventario_ok:

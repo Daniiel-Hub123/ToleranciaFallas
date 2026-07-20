@@ -1,49 +1,22 @@
-# EVIDENCIA DE RECUPERACIÓN - FALLO 2: LA PASARELA LENTA
-
-## 📌 Descripción del Experimento
-Se simula lentitud crítica en la pasarela externa de pagos (retraso de 20s). Se evalúa que el microservicio de Reservas active su Timeout (3.0s) para evitar colgar sockets de red, incremente el contador de fallos y active el Circuit Breaker (OPEN), bloqueando peticiones adicionales con error HTTP 503 rápido.
-
----
-
-## 💻 Comando de Inyección del Caos
-```bash
-# Inyectar latencia de 20 segundos de forma manual al servicio de pagos
-curl -X POST -H "Content-Type: application/json" -d '{"latencia": true}' http://pagos-service:8000/config
-```
-
----
-
-## 📄 Logs de Consola del Servicio de Reservas
-A continuación se muestran los logs de `reservas-service` que documentan la apertura del Circuit Breaker:
-
-```text
-# Petición 1: Timeout de Pagos superado
-[TIMEOUT WARNING] Intento de pago superó el límite de 3.0s. Incrementando fallos (1/3).
-INFO: 504 Gateway Timeout en llamada de cobro.
-
-# Petición 2: Timeout de Pagos superado
-[TIMEOUT WARNING] Intento de pago superó el límite de 3.0s. Incrementando fallos (2/3).
-INFO: 504 Gateway Timeout en llamada de cobro.
-
-# Petición 3: Timeout de Pagos superado. Se alcanza el umbral.
-[TIMEOUT WARNING] Intento de pago superó el límite de 3.0s. Incrementando fallos (3/3).
-[CIRCUIT BREAKER] Cambiando estado de CLOSED a OPEN. Pasarela de pagos inhabilitada temporalmente.
-INFO: 504 Gateway Timeout en llamada de cobro.
-
-# Petición 4 (Inmediata): El Circuit Breaker bloquea la petición antes de intentar red
-[CIRCUIT BREAKER] Intento de llamada bloqueado. Estado actual: OPEN.
-INFO: 503 Service Unavailable retornado de forma rápida.
-```
-
----
-
-## 📈 Métrica de Éxito
-* **Comportamiento Esperado:** Las llamadas inmediatas fallan rápido con código HTTP 503 sin consumir recursos ni esperar 3 segundos.
-* **Resultados Obtenidos:**
-
-| Petición N° | Estado de CB | Latencia Pagos | Código HTTP | Tiempo de Respuesta |
-|:---:|:---:|:---:|:---:|:---:|
-| 1 | CLOSED | 20.0s | 504 Gateway Timeout | 3.01 s |
-| 2 | CLOSED | 20.0s | 504 Gateway Timeout | 3.02 s |
-| 3 | CLOSED | 20.0s | 504 Gateway Timeout | 3.01 s (Apertura de CB) |
-| 4 | OPEN | 20.0s | 503 Service Unavailable | **0.002 s (Fallo Rápido)** |
+[DB STARTUP] Base de datos de Reservas inicializada con éxito.
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[RETRY] Error al conectar a inventario (Intento 1/3): All connection attempts failed. Reintentando en 1s...
+[RETRY] Error al conectar a inventario (Intento 2/3): All connection attempts failed. Reintentando en 1s...
+[RETRY] Error al conectar a inventario (Intento 3/3): All connection attempts failed. Reintentando en 1s...
+INFO:     10.244.0.3:54992 - "POST /reservar HTTP/1.1" 500 Internal Server Error
+INFO:     10.244.0.3:39622 - "POST /reservar HTTP/1.1" 504 Gateway Timeout
+INFO:     10.244.0.3:39646 - "POST /reservar HTTP/1.1" 504 Gateway Timeout
+INFO:     10.244.0.3:60656 - "POST /reservar HTTP/1.1" 504 Gateway Timeout
+INFO:     10.244.0.3:48186 - "POST /reservar HTTP/1.1" 503 Service Unavailable
+INFO:     10.244.0.3:48192 - "POST /reservar HTTP/1.1" 503 Service Unavailable
+[DB STARTUP] Base de datos de Reservas inicializada con éxito.
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     10.244.0.3:39632 - "POST /reservar HTTP/1.1" 504 Gateway Timeout
+INFO:     10.244.0.3:40756 - "POST /reservar HTTP/1.1" 504 Gateway Timeout
+INFO:     10.244.0.3:60640 - "POST /reservar HTTP/1.1" 504 Gateway Timeout
