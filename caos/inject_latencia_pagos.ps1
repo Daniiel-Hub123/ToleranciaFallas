@@ -38,7 +38,7 @@ try {
     }
     
     Write-Host "Ejecutando configuración interna en el pod: $podName..." -ForegroundColor Cyan
-    $pyCmd = "import urllib.request, json; req = urllib.request.Request('http://localhost:8000/config', data=json.dumps({'latencia': $latencia}).encode(), headers={'Content-Type': 'application/json'}); print(urllib.request.urlopen(req).read().decode())"
+    $pyCmd = "import urllib.request; req = urllib.request.Request('http://localhost:8000/config', data=b'{\`"latencia\`": $latencia}', headers={'Content-Type': 'application/json'}); print(urllib.request.urlopen(req).read().decode())"
     kubectl exec $podName -- python -c $pyCmd
     Write-Host "¡Configuración aplicada internamente en el pod!" -ForegroundColor Green
 }

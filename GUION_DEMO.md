@@ -46,7 +46,7 @@ Este documento describe el guion paso a paso de la demostración práctica (Part
   ```powershell
   Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_1"}' -ContentType "application/json"
   ```
-  *Resultado esperado:* Retorna la reserva completada.
+  *Resultado esperado:* Retorna la reserva completada (HTTP 200).
 
 * **Inyección de la Falla:**
   En una segunda terminal, ejecutar el script de caos para tumbar el pod de inventario:
@@ -57,7 +57,10 @@ Este documento describe el guion paso a paso de la demostración práctica (Part
   # O en Git Bash / Linux:
   ./caos/inject_crash_inventario.sh
   ```
-  Inmediatamente después, volver a enviar la petición de reserva en la primera terminal.
+  Inmediatamente después (en menos de 1 segundo), volver a enviar la petición de reserva en la primera terminal:
+  ```powershell
+  Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_2"}' -ContentType "application/json"
+  ```
 
 * **Comandos de Verificación en Vivo:**
   Ejecutar los siguientes comandos en terminales secundarias para visualizar el impacto y la autorecuperación:
@@ -69,12 +72,25 @@ Este documento describe el guion paso a paso de la demostración práctica (Part
      ```
   2. **Monitoreo de Logs de Reservas (Ver reintentos automáticos):**
      ```powershell
-     # Ver cómo Reservas detecta el fallo temporal, reintenta (1s, 2s...) y se recupera
+     # Ver cómo Reservas detecta el fallo temporal, reintenta en consola y se recupera
      kubectl logs -l app=reservas --tail=40 -f
      ```
 
+* **💡 Método Alternativo (Para forzar los reintentos visibles al 100%):**
+  Dado que Kubernetes levanta el pod de reemplazo muy rápido, puedes forzar la aparición de las 3 trazas de reintento apagando el servicio temporalmente:
+  ```powershell
+  # 1. Apagar temporalmente el inventario a 0 réplicas
+  kubectl scale deployment inventario-deployment --replicas=0
+
+  # 2. Enviar reserva (se quedará esperando y fallará tras los 3 reintentos)
+  Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_2"}' -ContentType "application/json"
+
+  # 3. Restaurar el inventario a 1 réplica para volver a la normalidad
+  kubectl scale deployment inventario-deployment --replicas=1
+  ```
+
 * **Resultado esperado:**
-  El log de Reservas muestra errores de red (`ConnectError`) e inicia reintentos automáticos. Una vez levantado el pod de reemplazo en el Nodo 1 (`minikube`), la transacción finaliza con éxito (HTTP 200).
+  El log de Reservas muestra en consola `[RETRY] Error al conectar a inventario (Intento X/3)...` en tiempo real. Una vez levantado o restaurado el pod de reemplazo, las transacciones vuelven a procesarse con éxito (HTTP 200).
 
 ---
 
@@ -103,11 +119,19 @@ Este documento describe el guion paso a paso de la demostración práctica (Part
      ```
 
 * **Ejecución de la prueba:**
-  Enviar 3 reservas consecutivas. Cada una demorará exactamente **3 segundos** y fallará con un HTTP 504 (Timeout) debido al límite estricto de timeout configurado.
-  * Se observa en los logs de Reservas: `[TIMEOUT WARNING] Intento de pago superó el límite de 3.0s.`
-  
-  A la 4ta petición, la respuesta es instantánea (0.002s) retornando un error **HTTP 503 (Circuit Breaker is OPEN)**.
-  * Se observa en los logs de Reservas: `[CIRCUIT BREAKER] Intento de llamada bloqueado. Estado actual: OPEN.`
+  Enviar peticiones de reserva consecutivas usando asientos válidos (debes mandar entre 6 y 8 peticiones en total para que las réplicas distribuidas abran sus respectivos circuitos):
+  ```powershell
+  # Peticiones 1 a 6 (Tardarán 3s cada una y fallarán por Timeout)
+  Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_3"}' -ContentType "application/json"
+  Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_4"}' -ContentType "application/json"
+  Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_5"}' -ContentType "application/json"
+  Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_6"}' -ContentType "application/json"
+
+  # Peticiones 7 y 8 (Fallo instantáneo por Circuit Breaker - HTTP 503)
+  Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_7"}' -ContentType "application/json"
+  ```
+  * Se observa en los logs de Reservas para las primeras peticiones: `[TIMEOUT WARNING] Intento de pago superó el límite de 3.0s.`
+  * A partir de la petición 7, el resultado es instantáneo (0.002s) retornando el error de Circuit Breaker.
 
 * **Recuperación:**
   Desactivar el modo latencia en el servicio de pagos usando el script de caos:

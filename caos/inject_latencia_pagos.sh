@@ -39,6 +39,6 @@ else
   fi
   
   echo "Ejecutando configuración interna en el pod: $POD_NAME..."
-  kubectl exec "$POD_NAME" -- python -c "import urllib.request, json; req = urllib.request.Request('http://localhost:8000/config', data=json.dumps({'latencia': $LATENCIA}).encode(), headers={'Content-Type': 'application/json'}); print(urllib.request.urlopen(req).read().decode())"
+  kubectl exec "$POD_NAME" -- python -c "import urllib.request; req = urllib.request.Request('http://localhost:8000/config', data=b'{\"latencia\": $LATENCIA}', headers={'Content-Type': 'application/json'}); print(urllib.request.urlopen(req).read().decode())"
   echo "¡Configuración aplicada internamente en el pod!"
 fi
