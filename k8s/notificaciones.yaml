@@ -13,6 +13,8 @@ spec:
       labels:
         app: notificaciones
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: minikube-m02
       containers:
       - name: notificaciones
         image: toleraciafallas/notificaciones:latest

@@ -13,6 +13,8 @@ spec:
       labels:
         app: inventario
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: minikube
       containers:
       - name: inventario
         image: toleraciafallas/inventario:latest

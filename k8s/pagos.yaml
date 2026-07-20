@@ -13,6 +13,8 @@ spec:
       labels:
         app: pagos
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: minikube
       containers:
       - name: pagos
         image: toleraciafallas/pagos:latest

@@ -13,6 +13,8 @@ spec:
       labels:
         app: api-gateway
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: minikube
       containers:
       - name: api-gateway
         image: toleraciafallas/api-gateway:latest

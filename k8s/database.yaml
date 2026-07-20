@@ -36,6 +36,8 @@ spec:
       labels:
         app: database
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: minikube-m02
       containers:
       - name: postgres
         image: postgres:15-alpine
