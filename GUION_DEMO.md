@@ -15,25 +15,28 @@ Para iniciar la demostración con un entorno limpio, abra su terminal de **Power
 # 1. CD al proyecto (Reemplace con la ruta local donde descargó el repositorio)
 cd C:\ruta\al\proyecto\ToleranciaFallas
 
-# 2. Iniciar el clúster de 2 nodos
-# Nota: Si el comando da un error por clúster existente de un solo nodo, ejecute primero 'minikube delete' para reiniciar de cero, o agregue el segundo nodo en caliente usando 'minikube node add'
+# 2. Eliminar por completo el clúster actual (borra todos los pods viejos y configs)
+# Útil si ya tenías un clúster de un solo nodo y quieres forzar la creación de dos nodos limpios
+minikube delete
+
+# 3. Crear el clúster nuevo con exactamente 2 nodos desde el inicio
 minikube start --nodes 2
 
-# 3. Construir las imágenes en tu Docker local (Windows)
+# 4. Construir las imágenes en tu Docker local (Windows)
 docker build -t toleraciafallas/api-gateway:latest ./src/api-gateway
 docker build -t toleraciafallas/reservas:latest ./src/reservas
 docker build -t toleraciafallas/inventario:latest ./src/inventario
 docker build -t toleraciafallas/pagos:latest ./src/pagos
 docker build -t toleraciafallas/notificaciones:latest ./src/notificaciones
 
-# 4. Cargar las imágenes compiladas al clúster (Esto las copia a todos los nodos del clúster multi-nodo automáticamente)
+# 5. Cargar las imágenes compiladas al clúster (Esto las copia a todos los nodos del clúster multi-nodo automáticamente)
 minikube image load toleraciafallas/api-gateway:latest
 minikube image load toleraciafallas/reservas:latest
 minikube image load toleraciafallas/inventario:latest
 minikube image load toleraciafallas/pagos:latest
 minikube image load toleraciafallas/notificaciones:latest
 
-# 5. Desplegar los manifiestos en orden
+# 6. Desplegar los manifiestos en orden
 kubectl apply -f k8s/database.yaml
 kubectl apply -f k8s/api-gateway.yaml
 kubectl apply -f k8s/reservas.yaml
@@ -42,7 +45,7 @@ kubectl apply -f k8s/pagos.yaml
 kubectl apply -f k8s/notificaciones.yaml
 kubectl apply -f k8s/pod-anti-affinity-rules.yaml
 
-# 6. Monitorear que todos los pods estén en estado Running
+# 7. Monitorear que todos los pods estén en estado Running
 kubectl get pods -w
 ```
 
@@ -105,7 +108,7 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 
 ---
 
-### 3. Caso 2: La Pasarela Lenta (Circuit Breaker) (Integrante B)
+### 3. Caso 2: La Pasarela Lenta (Circuit Breaker) (Integrante A)
 * **Activar Port-Forward a Pagos:**
   En una terminal secundaria, configure el reenvío de puertos para acceder al microservicio interno de pagos:
   ```powershell
@@ -128,7 +131,7 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 
 ---
 
-### 4. Caso 3: El Diluvio de Peticiones (Rate Limiting) (Integrante A)
+### 4. Caso 3: El Diluvio de Peticiones (Rate Limiting) (Integrante B)
 * **Inyección del Caos:**
   Dispare la prueba de sobrecarga usando la herramienta k6 dirigida al API Gateway:
   ```powershell
