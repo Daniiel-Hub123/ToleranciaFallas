@@ -62,10 +62,10 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 
 | Escenario de Caos | Integrante Responsable | Acción / Comando | Comportamiento Evaluado |
 | :--- | :--- | :--- | :--- |
-| **Inicio & Topología** | Integrante A | `kubectl get nodes` | Clúster multi-nodo y anti-afinidad de pods. |
+| **Inicio & Topología** | Integrante A y B | `kubectl get nodes` | Clúster multi-nodo y anti-afinidad de pods. |
 | **1. Inventario Fantasma** | Integrante A | `kubectl delete pod` | Reintentos automáticos y auto-recuperación de pods. |
-| **2. Pasarela Lenta** | Integrante B | `kubectl port-forward` | Timeout estricto de 3s y apertura de Circuit Breaker. |
-| **3. Diluvio de Peticiones** | Integrante A | `k6 run` | Rate Limiting perimetral (HTTP 429) en el Gateway. |
+| **2. Pasarela Lenta** | Integrante A | `kubectl port-forward` | Timeout estricto de 3s y apertura de Circuit Breaker. |
+| **3. Diluvio de Peticiones** | Integrante B | `k6 run` | Rate Limiting perimetral (HTTP 429) en el Gateway. |
 | **4. Correo Perdido** | Integrante B | `kubectl scale` | Fallback / Degradación elegante de notificaciones. |
 
 ---
