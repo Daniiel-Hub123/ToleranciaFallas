@@ -15,7 +15,8 @@ Para iniciar la demostración con un entorno limpio, abra su terminal de **Power
 # 1. CD al proyecto (Reemplace con la ruta local donde descargó el repositorio)
 cd C:\ruta\al\proyecto\ToleranciaFallas
 
-# 2. Iniciar el clúster multi-nodo en Minikube
+# 2. Iniciar el clúster de 2 nodos
+# Nota: Si el comando da un error por clúster existente de un solo nodo, ejecute primero 'minikube delete' para reiniciar de cero, o agregue el segundo nodo en caliente usando 'minikube node add'
 minikube start --nodes 2
 
 # 3. Vincular el entorno de Docker al daemon del clúster Minikube
@@ -74,8 +75,8 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
   kubectl get pods -o wide
   ```
 * **Explicación:**
-  - Mostrar que el clúster cuenta con **2 nodos activos** en Windows (`minikube` y `minikube-n2`).
-  - Enseñar la columna de `NODE` en los pods para demostrar que las réplicas del servicio crítico de reservas se han distribuido en nodos físicos separados mediante políticas de anti-afinidad.
+  - Mostrar que el clúster cuenta con **2 nodos activos** en Windows: **`minikube`** (que representa físicamente al **Nodo 1** / Control Plane) y **`minikube-m02`** (que representa al **Nodo 2** / Worker).
+  - Enseñar la columna de `NODE` en los pods para demostrar que las réplicas del servicio de reservas se han distribuido automáticamente entre ambos nodos mediante políticas de anti-afinidad.
 
 ---
 
