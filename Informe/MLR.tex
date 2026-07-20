@@ -1,0 +1,500 @@
+\documentclass[12pt,letterpaper]{article}
+
+% --- Paquetes Básicos ---
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{url}
+
+% Definir soporte básico para YAML
+\lstdefinelanguage{yaml}{
+  keywords={true,false,null,y,n},
+  keywordstyle=\color{blue}\bfseries,
+  basicstyle=\ttfamily\small,
+  sensitive=false,
+  comment=[l]{\#},
+  morestring=[b]',
+  morestring=[b]"
+}
+
+\lstdefinestyle{yamlstyle}{
+  basicstyle=\ttfamily\small,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  frame=single,
+  rulecolor=\color{gray},
+  backgroundcolor=\color{gray!5},
+  breaklines=true,
+  breakatwhitespace=true,
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true,
+  tabsize=2,
+  captionpos=b
+}
+
+% --- Paquete para Enlaces ---
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Informe Técnico - Migración a Kubernetes},
+    pdfpagemode=FullScreen,
+}
+
+% --- Configuración de Código (YAML / Bash) ---
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{lightgray}{rgb}{0.95, 0.95, 0.95}
+\definecolor{darkgray}{rgb}{0.4, 0.4, 0.4}
+\definecolor{purple}{rgb}{0.5, 0.0, 0.5}
+\definecolor{navyblue}{rgb}{0.0, 0.0, 0.5}
+
+\lstset{
+    backgroundcolor=\color{lightgray},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numberstyle=\tiny\color{darkgray}, 
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{black!30}
+}
+
+% Definición básica para sintaxis YAML
+\lstdefinelanguage{yaml}{
+  keywords={true,false,null,y,n},
+  keywordstyle=\color{navyblue}\bfseries,
+  basicstyle=\ttfamily\footnotesize,
+  sensitive=false,
+  comment=[l]{\#},
+  commentstyle=\color{darkgray}\ttfamily,
+  stringstyle=\color{purple}\ttfamily,
+  moredelim=[l][\color{orange}]{\&},
+  moredelim=[l][\color{magenta}]{\*},
+  moredelim=**[il][\color{red}{:}\string]{:},
+  literate =    {---}{{\textcolor{blue}{---}}}3
+                {>}{{\textcolor{red}{>}}}1               
+                {|}{{\textcolor{red}{|}}}1               
+}
+
+% --- Configuración de Encabezado y Pie de Página ---
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Sistemas Distribuidos}
+\rhead{Mecanismos de Tolerancia a Fallas}
+\cfoot{\thepage}
+
+\begin{document}
+
+% =============================================================================
+% PORTADA
+% =============================================================================
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\large \textbf{UNIVERSIDAD POLITÉCNICA SALESIANA} \par}
+    {\large Facultad de Ingeniería / Ciencias de la Computación \par}
+    \vspace{1.5cm}
+    {\scshape\Large Sistemas Distribuidos \par}
+    \vspace{1cm}
+    {\huge\bfseries Informe Técnico: \\ Mecanismos de tolerancia a fallas \par}
+    \vspace{0.5cm}
+
+    \vspace{2cm}
+    \textbf{Integrantes:}\\
+    Daniel Barros dbarrosp1@est.ups.edu.ec \\
+    Xavier Siguachi xsiguachi@est.ups.edu.ec \\
+    \vspace{1.5cm}
+    \textbf{Docente:}\\
+    Cristian Fernando Timbi Sisalima \\
+    \vfill
+    {\large \today \par}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+%=============================================================================
+% SECCIÓN: INTRODUCCIÓN Y PLANTEAMIENTO
+%=============================================================================
+\section{Introducción y Planteamiento de la Investigación}
+\label{sec:introduccion}
+
+% TODO: Redactar de 1 a 2 párrafos introductorios sobre la importancia de la 
+% tolerancia a fallos y la consistencia en sistemas distribuidos.
+La tolerancia a fallos y la consistencia de datos representan dos de los mayores desafíos en el diseño de sistemas distribuidos modernos. A medida que las aplicaciones escalan de manera horizontal, la probabilidad de que ocurran fallas de red, particiones o caídas de nodos individuales se incrementa exponencialmente. En este contexto, el presente informe analiza los mecanismos que permiten mantener un estado global coherente a pesar de la presencia de fallos parciales no correlacionados.
+
+\subsection{Mecanismo Seleccionado y Justificación}
+Para esta investigación, se ha seleccionado el mecanismo de \textbf{Replicación de Máquinas de Estado} (State Machine Replication, SMR) basado en algoritmos de consenso coordinado. 
+
+% TODO: Completar la justificación de su grupo aquí.
+% Ejemplo: "Este mecanismo es crucial porque sustenta la infraestructura crítica de..."
+
+\subsection{Preguntas de Investigación}
+Con el fin de delimitar de manera rigurosa el alcance de este análisis multivocal, se han planteado las siguientes tres preguntas de investigación:
+
+\begin{itemize}
+    \item \textbf{Pregunta 1 (Q1 - Fundamento Teórico):} ¿Cómo garantizan formalmente los algoritmos de consenso que sustentan la Replicación de Máquinas de Estado (SMR) ---como Paxos, Raft o PBFT--- las propiedades de \textit{safety} (seguridad) y \textit{liveness} (vivacidad), y de qué manera estas garantías se traducen en el nivel de consistencia (p. ej., linealizabilidad) que el mecanismo puede ofrecer a un sistema distribuido tolerante a fallos?
+    
+    \item \textbf{Pregunta 2 (Q2 - Alternativas y Trade-offs):} ¿Cómo se compara la Replicación de Máquinas de Estado frente a alternativas como la replicación primario-secundario y la replicación basada en quórums, considerando su complejidad de implementación, latencia u overhead, garantías de consistencia y costo operacional, y qué criterios arquitectónicos justifican la elección de uno u otro mecanismo según los \textit{trade-offs} del sistema?
+    
+    \item \textbf{Pregunta 3 (Q3 - Evidencia en la Industria):} ¿En qué medida la evidencia documentada sobre la adopción de la Replicación de Máquinas de Estado en sistemas de producción a gran escala ---como \textit{etcd}, Google Spanner, Apache ZooKeeper o CockroachDB--- confirma o matiza, en la práctica, las decisiones de diseño y los \textit{trade-offs} descritos en la literatura teórica, y qué adaptaciones de ingeniería han sido necesarias para llevar estos mecanismos del modelo formal a la implementación real?
+\end{itemize}
+
+\subsection{Justificación de las Preguntas de Investigación}
+% TODO: Escribir el párrafo original del equipo justificando la relevancia de estas preguntas.
+
+\subsection{Anexo: Evidencia de Diseño con Inteligencia Artificial}
+Para el refinamiento de las preguntas de investigación presentadas, se utilizó el siguiente prompt estructurado en la herramienta de IA:
+
+\begin{quote}
+    \small\itshape
+    % TODO: Pegar aquí el texto exacto del prompt utilizado en la Parte I.
+    'Actúa como un investigador senior del en Sistemas Distribuidos especializado en tolerancia a fallos. Necesito generar dos preguntas de investigación sobre el mecanismo de Replicas de Maquinas de Estado, que aborden: (1) su fundamento teórico y las garantías que ofrece, (2) sus alternativas y los trade-offs que determinan su elección frente a otras, y (3) la evidencia de su uso real en la industria. Las preguntas deben evitar respuestas de 'sí' o 'no' y centrarse en el 'cómo' y el 'por qué'.
+    Las preguntas no deben poder responderse con un simple sí o no.
+    No se aceptan preguntas de conocimiento general simple que no requieran revisión bibliográfica para sustentarse.
+    Las dos preguntas deben cubrir, en conjunto, los tres ejes: fundamento teórico, alternativas/trade-offs y evidencia de uso en la industria.'
+\end{quote}
+
+
+%=============================================================================
+% SECCIÓN: METODOLOGÍA Y CURADURÍA DE FUENTES
+%=============================================================================
+\section{Metodología y Curaduría de Fuentes (MLR)}
+\label{sec:metodologia}
+
+\subsection{Justificación de las Fuentes Seleccionadas}
+A continuación, se detalla y justifica la selección de las ocho fuentes de información que componen esta Revisión Multivocal de Literatura (MLR).
+
+% TODO: Escribir un párrafo para cada fuente explicando qué aporta y a qué pregunta responde.
+\subsubsection{Fuentes Formales (Académicas)}
+\begin{enumerate}
+    \item \textbf{Fuente \cite{woos2016}:} Esta fuente se escogió como articulo fundacional del mecanismo ya que presenta una verificación formal del protocolo de consenso Raft, el cual es un punto de partida adecuado para describir como el mecanismo garantiza la consistencia y la tolerancia a fallos en sistemas distribuidos, además de ser un artículo científico con validación experimental que proporciona una base sólida para comprender el funcionamiento y la importancia del mecanismo elegido.
+    
+    \item \textbf{Fuente \cite{bravo2024}:} Este articulo analiza la replicación de máquinas de estado tolerante a los fallos bizantinos que habíamos visto en clase, explicando la garantía de la consistencia y la disponibilidad del sistema frente a estos conflictos, además de proponer un marco formal para evaluar la vivacidad y el rendimiento de los protocolos aplicados, sirviendo como referencia actual y confiable sobre el mecanismo estudiado.
+    
+    \item \textbf{Fuente \cite{lebow2025}:} Este articulo presenta la implementación práctica de un sistema basado en el mecanismo elegido inspirado en etcd, de modo que se explican los desafíos y lecciones al aplicar esta herramienta en entornos distribuidos reales. 
+
+
+    \item \textbf{Fuente \cite{liang2025}:} Esta fuente fue seleccionada ya que analiza las consideraciones prácticas necesarias para implementar el mecanismo de replicaciones de máquinas de estado, pero enfocado en los entornos de Nube o Cloud. Junto con el análisis se abordan aspectos de rendimiento, confiabilidad y despliegue que describen más a detalle la aplicación del mecanismo en tolerancia a fallos en sistemas distribuidos.
+    
+    \item \textbf{Fuente \cite{kondru2026}:} Este artículo se escogió ya que explica como Kubernetes (basado en las herramientas que analizamos en la primera fuente) es aplicado para garantizar alta disponibilidad, consistencia y capacidades de autorrecuperación en un ejemplo práctico de aplicación de sistemas distribuidos modernos, formando parte de la respuesta a la tercera pregunta de investigación planteada.
+
+    
+    \item \textbf{Fuente \cite{maiyya2021}:} Por último, se escogió este último artículo ya que analiza un sistema distribuido inspirado en Google Spanner, identificando principalmente los desafíos que tiene este mecanismo referente a la sincronización entre replicas y proponiendo un protocolo de consenso que es tolerante a fallos para mejorar el rendimiento. Esta metodología nos ayuda a comprender como los mecanismos de consenso pueden ser claves para manejar errores en sistemas distribuidos de gran escala.
+    
+\end{enumerate}
+
+\subsubsection{Fuentes Grises (Blogs de Ingeniería y Reportes Técnicos)}
+
+Las siguientes cuatro fuentes grises son documentos primarios, redactados por ingenieros que diseñaron y mantienen sistemas de producción reales. La elección de las fuentes responde a problemas de red, procesamiento y latencia que, en producción, aparecen al implementar estos algoritmos teóricos.
+
+
+\begin{enumerate}
+    \item \textbf{Fuente \cite{etcd2021}:} Demuestra el costo en la red que tiene garantizar la propiedad de safety (seguridad) en un sistema real, en la teoría de Raft, leer un dato parece una operación local rápida. Sin embargo, se selecciono esta documentación porque detalla que, en producción, el nodo líder de etcd debe comunicarse con el quórum de nodos antes de procesar una lectura. Debe hacer esto para confirmar que sigue siendo el líder y evitar entregar datos obsoletos. Esta fuente evidencia cómo la linealizabilidad exige tráfico de red constante y genera un impacto directo en el rendimiento.
+    \item \textbf{Fuente \cite{brooker2020}:} Expone las limitaciones operativas de la Replicación de Máquinas de Estado. Este artículo justifica técnicamente por qué AWS evita usar el consenso siempre que es posible. El autor detalla que depender de un nodo líder crea un cuello de botella en el procesamiento y genera una pausa en la disponibilidad si ese nodo falla y el clúster debe elegir uno nuevo. Esta fuente documenta qué criterios arquitectónicos llevan a una empresa a preferir diseños sin líder (usando control de concurrencia optimista o colas de mensajes) para reducir la latencia y aumentar la tolerancia a fallos.
+
+     \item \textbf{Fuente \cite{cockroach2015}:}  Evidencia cómo el modelo teórico de Raft falla al intentar escalar sin modificaciones. Si una base de datos distribuye su información en miles de fragmentos y ejecuta el algoritmo Raft original en cada uno, los nodos deben enviarse mensajes de control (heartbeats) continuos por cada fragmento. Este artículo explica cómo ese diseño saturó la red de la base de datos y la capacidad de procesamiento. La fuente detalla la adaptación técnica exacta que aplicaron: agrupar los mensajes de múltiples fragmentos en una sola conexión de red (MultiRaft), lo cual es un caso real de modificación al modelo formal.
+    \item \textbf{Fuente \cite{srivastava2023}:} Describe cómo se resolvieron los problemas de latencia del algoritmo Paxos en una distribución geográfica extensa. El algoritmo Paxos requiere que los nodos en diferentes continentes se comuniquen por la red para acordar el orden de cada transacción. Esto genera una alta latencia en las lecturas. Esta fuente explica técnicamente la solución de Google: en lugar de usar comunicación por red para ordenar las operaciones, integraron el algoritmo con hardware de precisión (relojes atómicos y GPS, llamado TrueTime). Esto permite a los nodos asignar una marca de tiempo exacta a los datos, garantizando la consistencia sin necesidad de consultar al resto del clúster.
+\end{enumerate}
+
+\subsection{Tabla de Casos Industriales Identificados}
+La Tabla~\ref{tab:casos_industriales} resume de manera preliminar los casos de adopción real analizados en esta revisión, destacando las adaptaciones técnicas necesarias para la implementación en entornos de producción.
+
+\begin{table}[htbp]
+\centering
+\caption{Resumen de Casos de Estudio en la Industria}
+\label{tab:casos_industriales}
+\small
+\begin{tabular}{|p{2.5cm}|p{3.5cm}|p{5cm}|p{2cm}|}
+\hline
+\textbf{Empresa / Sistema} & \textbf{Contexto de Uso} & \textbf{Implementación del Mecanismo} & \textbf{Fuente(s)} \\ \hline
+
+\textit{etcd (CNCF)} & Almacenamiento clave-valor para configuración y estado crítico en orquestadores (ej. Kubernetes). & Implementa Raft obligando a que las lecturas consistentes pasen por el quórum de consenso, previniendo datos obsoletos a costa de latencia. & \cite{etcd2021} \\ \hline
+
+\textit{AWS (Arquitectura Interna)} & Diseño de sistemas distribuidos y servicios de nube a escala global. & Evita SMR y nodos líderes cuando es posible, utilizando colas e idempotencia para evadir el cuello de botella y punto único de fallo del líder. & \cite{brooker2020} \\ \hline
+
+\textit{CockroachDB} & Base de datos SQL distribuida geográficamente con alta tolerancia a fallos. & Fragmenta los datos creando miles de grupos Raft y desarrolla "MultiRaft" para agrupar mensajes de control (heartbeats), evitando saturar la red. & \cite{cockroach2015} \\ \hline
+
+\textit{Google Spanner} & Base de datos relacional para misiones críticas globales y multi-continente. & Combina Paxos con hardware de precisión (relojes atómicos y GPS en TrueTime) para procesar lecturas linealizables sin requerir coordinación de red. & \cite{srivastava2023} \\ \hline
+
+\end{tabular}
+\end{table}
+
+%=============================================================================
+% SECCIÓN: DESARROLLO DEL INFORME TÉCNICO
+%=============================================================================
+\section{Desarrollo del Informe Técnico}
+\label{sec:informe_tecnico}
+
+\subsection{Sección 1: Fundamento Teórico y Garantías de Consistencia en SMR }
+\label{subsec:q1_desarrollo}
+
+En esta sección se va explicar en base a las fuentes elegidas el fundamento teórico de la replicación de maquinas de estado y su importancia en la consistencia de la información gestionada para asegurar los criterios de seguridad, garantia de procesos y linealizabilidad. A continuación se desglosa las siguientes subsecciones para responder a esta incognita:
+
+
+\begin{enumerate}
+    \item \textbf{Garantías formales de Seguridad o (\textit{Safety})}
+
+    Este criterio segun \cite{woos2016} se basa en la premisa de que 'nada malo sucederá', de modo que las réplicas que se realicen no van a tener problemas de desincronización. En el primer punto explicamos como puede se puede verificar este aspecto con el uso de Raft y en el segundo como funciona Paxos a nivel estructural para asegurar la seguridad del sistema distribuido.
+    
+    \begin{itemize}
+        \item \textbf{Verificación Asistida por Máquina (Raft):} La seguridad se gestiona mediante asistentes de prueba matemáticos como por ejemplo el framework Verdi. Estas pruebas aplican procesos de identificación y demostración del conjunto de invariantes interdepentientes que describen el comportamiento adecuado del sistema. Para facilitar dicha demostración se utilizan variables fantasma que sirven para registrar imformación histórica del sistema durante la verificación, como por ejemplo las entradas del registro. Mediante estos subprocesos se puede verificar propiedades fundamentales como la Completitud del Líder, el cual consiste en que todo líder elegido tiene su registro con las entradas que ya han sido confirmadas previamente \cite{woos2016}. En resumen, esto nos ayuda a que de forma matématica, las propiedades de Raft se cumplan en todos los estados posibles del sistema, incluso si estan con fallos, esto garantiza consistencia en la evolución de las réplicas ya que se ejecutan las mismas operaciones en un mismo orden, haciendo que los nodos ejecutan decisiones iguales y que el sistema distribuido se mantega íntegro.
+        
+        
+        \item \textbf{Intersección de Mayorías (Multi-Paxos y Raft):} Segun \cite{liang2025}, el protocolo MultiPaxos nos ayuda a garantizar las seguridad mediante 2 fases, primero la elección del lider y luego la replicación, en la primera fase los nodos se ponen de acuerdo sobre quién será el lider y en la segunda fase, dicho líder elegido envia las operaciones al resto de réplicas para que puedan almacenarlas y ejecutarlas posteriormente. El trabajo de \cite{liang2025} nos explica que estas 2 fases requieren de la aprobación de un quorum, el cual consiste en un grupo de la mayoría de nodos existentes. Como los quorums pueden compartir al menos un nodo, el líder puede obtener información sobre las operaciones que fueron confirmadas previamante. Con este mecanismo nosotros podemos asegurarnos de que existan registros iguales entre las réplicas, preservando la consistencia del sistema distribuido
+
+        
+    \end{itemize}
+
+    \item \textbf{Garantías formales de Vivacidad (\textit{Liveness})}
+    Segun \cite{bravo2024}, este criterio se basa en la premisa de que 'algo bueno eventualmente sucederá', lo que nos indica que el sistema no va deternerse, garantizando que los comandos/acciones de los clientes sean procesados, sin embargo, segun \cite{lebow2025}, se debe tener en cuenta el teorema de imposibilidad FLP, el cual indica que ningun algoritmo determinista puede garantizar seguridad y vivacidad(Liveness) al mismo tiempo en un red puramente síncrona, este problema es abordado con el modelo de sincronía parcial, el cual asume que habrá un tiempo de estimazación global en el que los mensajes se van a entregar \cite{bravo2024}. A continuación se explica un protocolo que usa este modelo para garantizar este criterio:
+
+    
+    \begin{itemize}
+        \item \textbf{SMR Synchronizers (PBFT):} Según \cite{bravo2024}, la vivacidad en PBFT se demuestra de forma mátematica mediante un mecanismo de cambio de vista que permite reemplazar a un líder(nodo) defectuoso. Para este cometido primero se verifican 2 propiedades principales explicadas a continuación:
+        
+
+        \begin{itemize}
+            \item \textbf{Completitud (Eventual abandono de líderes malos):} Esta propiedad garantiza que los nodos en estado correcto van a detectar eventualmente a un líder que no responde y por lo tanto, van a elegir uno nuevo. \cite{bravo2024} 
+                
+            \item \textbf{Precisión (Permanencia con líderes buenos):}
+            Esta propiedad lo que va garantizar es que los nodos no van abandonar innecesariamente a un líder que funciona de forma correcta si por ejemplo existen retrasos temporales de red \cite{bravo2024}.
+             En conjunto, estas propiedades aseguran que el clúster eventualmente encuentre un líder sano y que permanezca con él el tiempo suficiente para procesar las solicitudes, asegurando el progreso continuo del servicio.
+        \end{itemize}
+    \end{itemize}
+
+    \item \textbf{Traducción a la Consistencia (Linealizabilidad)}
+    Como último criterio se tiene a la linealizabilidad, que según \cite{woos2016}, consiste en el resultado de los anteriores aspectos, ya que garantiza que las operaciones parezcan ejecutarse de forma atómica y secuencial en una única maquina centralizada, aunque el clúster este gestionado de forma distribuida. Se puede explicar mas a fondo este criterio mediante los siguientes puntos:
+
+    
+    \begin{itemize}
+        \item \textbf{El Teorema de la Linealizabilidad:} Según el trabajo de \cite{woos2016}, es importante mencionar este teorema debido a que, como revisamos con Raft, la seguridad de la maquina de estado directamente implica linealizabilidad, siendo suficiente para garantizar esta propiedad ya que todo los nodos acuerdan un mismo orden de las operaciones confirmadas,
+
+        
+        \item \textbf{Optimizaciones en la práctica (\textit{ReadIndex}):} 
+        En el trabajo de \cite{lebow2025}  donde se analiza una implementación en producción como 'etcd', se menciona que la linealizabilidad debe aplicarse sin perder rendimiento si se trata de operaciones de lectura. Para ello, se propone el mecanismo de ReadIndex, el cual consiste en permitir que líder confirme con un quórum si este continua siendo el líder válido antes de responder la solicitud al cliente, de modo que se evita incosistencias sin afectar el rendimiento ya que el líder no tiene que replicar la lectura a todos los nodos. Además, este mecanismo impide que el lider devuelva información desactualizada si sucede algun cambio de líder o una partición de red, permitiendo responder con datos locales en memoria manteniendo intacta la garantía formal de linealizabilidad.
+    \end{itemize}
+\end{enumerate}
+
+
+
+\subsection{Sección 2: Matriz Comparativa y Criterios Arquitectónicos}
+\label{sec:seccion2}
+
+Esta sección, en respuesta a la pregunta 2, aborda la comparación de SMR con otros mecanismos de replicación y contiene la matriz analítica obligatoria.
+
+\subsubsection{Análisis Comparativo de Mecanismos de Replicación}
+
+En cuanto a la \textbf{complejidad de implementación}, mientras sucede la elección del líder y la replicación, SMR requiere gestionar múltiples instancias lógicas para garantizar la seguridad, lo que exige el uso de herramientas matemáticas de verificación formal \cite{woos2016} y configuraciones avanzadas en la nube para poder gestionar redes complejas \cite{liang2025}. Mientras que la replicación primario-secundario es asíncrona, lo que reduce la complejidad al delegar escrituras a un solo nodo, lo que no requiere de consenso por quórum en cada paso, pero introduce riesgos de fallo y el proceso \textit{failover} es riesgoso, lo que puede provocar pérdida de datos debido a la asincronía \cite{brooker2020}.
+
+Con respecto a la \textbf{latencia y el overhead}, SMR garantiza el correcto funcionamiento del sistema, pero hay dos factores que cobran un precio alto en el rendimiento. Primero está la validación de lecturas: para mantener la linealizabilidad y evitar que los datos queden obsoletos, las lecturas deben validarse contra el quórum \cite{etcd2021}, lo que se traduce en que el clúster sufre de sobrecargas por los constantes mensajes de control \cite{cockroach2015}. Otras alternativas como la replicación basada en quórum sin líder, mejoran el rendimiento del sistema, evitando así el cuello de botella del líder único, lo que reduce la latencia en escrituras y aumenta la disponibilidad en escenarios de particiones de red prolongadas \cite{brooker2020}.
+
+En lo que tiene que ver a\textbf{garantías de consistencia}, SMR es ideal ya que se destaca por ofrecer linealizabilidad y serializabilidad, propiedades clave y muy importantes para las transacciones globales \cite{srivastava2023} y metadatos de orquestación \cite{lebow2025}. En comparación, esquemas que no tienen un líder y la replicación primario-secundario tienden a degradarse en cuanto a la consistencia de los datos para favorecer el rendimiento, lo que requiere que una capa de aplicación gestione conflictos en la consistencia de datos \cite{brooker2020}. 
+
+\subsubsection{Matriz de Comparación}
+En la Tabla~\ref{tab:matriz_comparacion} se evalúan cualitativamente los \textbf{costos operacionales} de los diferentes mecanismos frente a los cuatro criterios solicitados. Cada valoración cualitativa incluye su respectivo sustento bibliográfico obligatorio.
+
+\begin{table}[H]
+\centering
+\caption{Matriz Comparativa de Mecanismos de Replicación y Tolerancia a Fallos}
+\label{tab:matriz_comparacion}
+\renewcommand{\arraystretch}{1.4}
+\small
+\begin{tabular}{|p{3cm}|p{2.8cm}|p{2.8cm}|p{2.8cm}|p{2.8cm}|}
+\hline
+\textbf{Mecanismo / Alternativa} & \textbf{Complejidad de Implementación} & \textbf{Latencia / Overhead} & \textbf{Garantía de Consistencia} & \textbf{Costo Operacional} \\ \hline
+
+\textbf{SMR (Raft / Paxos)} & 
+Alta \cite{woos2016} \cite{liang2025} & 
+Alta \cite{cockroach2015} \cite{etcd2021} & 
+Alta \cite{srivastava2023} \cite{lebow2025} & 
+Alta \cite{brooker2020} \\ \hline
+
+\textbf{Primario-Secundario} & 
+Media \cite{brooker2020} & 
+Baja \cite{brooker2020} & 
+Media \cite{brooker2020} & 
+Media \cite{brooker2020} \\ \hline
+
+\textbf{Basado en Quórum (Sin líder)} & 
+Media \cite{brooker2020} & 
+Baja \cite{brooker2020} & 
+Baja \cite{srivastava2023} & 
+Media \cite{brooker2020} \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Criterios Arquitectónicos y Trade-offs de Elección}
+
+La elección de una alternativa frente a otra depende de los requerimientos del negocio y la topología de la infraestructura:
+
+ \begin{itemize}
+ \item \textbf{Cuándo elegir SMR:} Este mecanismo de tolerancia a fallos debe implementarse cuando necesitamos alta consistencia y exactitud de datos. Escenarios como transacciones financieras, control de concurrencia distribuida y almacenamiento de metadatos críticos justifican el alto costo operativo y de red que conlleva implementar SMR \cite{kondru2026, etcd2021}.
+ \item \textbf{Cuándo elegir Primario-Secundario o Quórum:} Estas alternativas, en cambio, son ideales en escenarios donde se prefieren arquitecturas orientadas a eventos, sistemas caché, telemetría y bases de datos de alta disponibilidad donde se exige una latencia de milisegundos. La ingeniería de plataformas en la nube indica que evitar arquitecturas de consenso coordinado mitiga el riesgo de caídas masivas que se generan por congestión o falla de un líder único \cite{brooker2020}.
+ \end{itemize}
+
+
+\subsection{Sección 3: Implementación Industrial, Adaptaciones Prácticas y Limitaciones }
+% TODO: Desarrollar el análisis de sus casos industriales reales aquí (aprox. 800 - 1000 palabras).
+% Recuerden enfocarse en las adaptaciones de ingeniería y en las limitaciones/fallos en producción.
+En esta sección se analiza cómo la teoría de SMR choca con la realidad de la producción a gran escala, utilizando los casos de estudio seleccionados para dar una respuesta a la tercera pregunta planteanda en la planificación. Primero vamos a describir los 2 casos de estudio elegidos, luego se va explicar los desafíos prácticos de los mismos y por último se explicará las limitaciones y problemas que surgen al aplicar la replicación de maquinas de estado en producción.
+
+\subsubsection{Análisis de Casos Reales}
+% TODO: Rellenar con los detalles de los dos sistemas que hayan seleccionado para su trabajo.
+Según los artículos referenciados, se puede decir que el mecanismo elegido requiere de adaptaciones arquitectonicas considerables para lidiar con las limitaciones de rendimiento y costo, criterios que son clave en los sistemas distribuidos.
+
+\begin{itemize}
+    \item \textbf{Opción A (CockroachDB):} Para esta base de datos, según \cite{cockroach2015}, el uso de Raft para todo el sistema no sería tan buena opción, ya que los datos se dividen en 'rangos' que requieren su propio grupo de consenso independiente, afectando el rendimiento del sistema. Para evitar este aspecto, se implementa 'MultiRaft', el cual consiste en un capa que agrupa las comunicaciones entre nodos y permite enviar un único heartbet por intervalo, garantizando una reducción en el tráfico de la red y en el consumo de recursos.
+
+    \item \textbf{Opción B (etcd):} En cuánto a 'etcd', según \cite{lebow2025}, se aplica con Raft en su registro de escritura anticipada o WAL(Write-Ahead Log) y en su base de datos BoltDB, lo que garantiza que la información mantenga la persistencia. Antes de que se confirme la operación a un cliente, lo que se hace aqui es almacenar tanto en WAL como en el disco, de modo que la recuperación del sistema puede ser mas rápida tras un fallo, logrando mantener la disponibilidad y consistencia de los datos. 
+
+\end{itemize}
+
+\subsubsection{Adaptaciones de Ingeniería del Modelo Formal a la Práctica}
+Cómo hemos visto, las verificación de Raft suelen demostrar que el protocolo garantiza propiedades fundamentales como la seguridad y la consistencia, pero si hablamos de entornos de producción, es necesario incoporar mecanismos adicionales para mejorar el rendimiento, la escalabilidad y la gestión del clúster sin ignorar las propiedades mencionadas. Las principales adaptaciones que se aplican para este fín son los siguientes:
+
+
+\begin{itemize}
+    \item \textbf{Compactación de logs:} Raft suele asumir que los logs pueden crecer indefinidamente para simplificar las demostraciones matemáticas, sin embargo, en sistemas reales, este crecimiento no es adecuado ya que puede resultar en un consumo excesivo de almacenamiento del disco. Para ello, mecanismos como 'etcd' aplican una compactación del log, el cual consiste en eliminar las operaciones antiguas una vez que ya se han establecido en el estado del sistema \cite{etcd2021}, junto a este proceso, se generan instantáneas o 'snapshots' del estado actual dentro del almacenamiento de metadatos de Raft. Mediante este mecanismo, las entradas antiguas del WAL pueden eliminarse sin ningun problema, reduciendo el espacio de almacenamienyo usado y teniendo una recuperación mas rápida de los nodos que estuvieron inactivos.  \cite{lebow2025}
+    
+    
+   \item \textbf{Cambios de membresía dinámicos:} Habilitar la posibilidad de agregar o remover a nivel de hardware nodos dañados de un clúster en caliente, lo que evita que se pause el procesamiento de solicitudes y resuelve los estados transicionales de configuración conjunta \cite{liang2025}.
+    
+    \item \textbf{Optimización de lecturas y multiplexación de red:} Mitigar el costo y \textit{overhead} que conlleva ejecutar el consenso de red en operaciones de lectura. La documentación de etcd evidencia que mantener linealizabilidad estricta obliga a validar cada lectura contra el quórum para evitar devolver datos obsoletos \cite{etcd2021}. Una forma de mitigar esto es implementar en sistemas de producción un mecanismo de consulta local con validación de quórum ligero \cite{lebow2025}. Se descubrió también que ejecutar múltiples instancias masivas de Raft satura la red con \textit{heartbeats}; esto sucedió al escalar masivamente bases de datos como CockroachDB, y para solucionarlo se desarrolló MultiRaft, que agrupa mensajes de control de miles de fragmentos de datos en una sola conexión optimizada \cite{cockroach2015}.
+\end{itemize}
+
+\subsubsection{Limitaciones, Modos de Fallo y Desafíos Operativos}
+En entornos reales de producción, los sistemas basados en SMR están expuestos a factores físicos y de red imprevistos en los modelos formales:
+\begin{itemize}
+    \item \textbf{El impacto de la latencia de red (WAN):} Implementar SMR en entornos multirregión conlleva una alta latencia que es inherente a las conexiones de largas distancias, lo que afecta severamente al tiempo de confirmación del consenso; esto limita el rendimiento de las escrituras masivas en la nube \cite{liang2025}.
+    
+    \item \textbf{Problemas derivados de la sincronización de relojes:} Otro desafío importante de SMR es poder sincronizar el tiempo de manera global, lo que afecta cómo se ordenan los eventos de manera correcta. La solución de Google Spanner es utilizar la API TrueTime, que es un sistema que utiliza relojes atómicos y receptores GPS. Esto permite que la base de datos mantenga una consistencia lineal global, lo que evita largas rondas de consenso para los procesos de lectura, siendo una solución ideal para manejar grandes volúmenes de datos concurrentes \cite{srivastava2023, maiyya2021}.
+    
+    \item \textbf{Comportamiento ante particiones de red prolongadas:} AWS documenta que la dependencia de un único líder crea naturalmente un único punto de fallo operativo. Escenarios de divisiones de red o pausas por recolección de basura conducen a ciclos de elección de líder que no finalizan, lo que afecta al funcionamiento del sistema, además de que se requieren de complejos mecanismos de auto-recuperación \cite{kondru2026}. Estas limitaciones nos dejan ver que los diseños sin líder son favorables cuando la consistencia estricta no es un requisito primordial \cite{brooker2020}. 
+\end{itemize}
+
+
+%=============================================================================
+% SECCIÓN: CONCLUSIONES Y TRANSPARENCIA
+%=============================================================================
+\section{Conclusiones y Transparencia}
+\label{sec:conclusiones_transparencia}
+
+\subsection{Conclusiones Generales}
+% TODO: Escribir el párrafo de conclusiones que resume todo el informe técnico.
+En conclusión, esta revisión multivocal ha demostrado que el mecanismo de Replicas de Maquinas de Estado (SMR) representa un estándar de diseño robusto para garantizar criterios de calidad como la linealizabilidad, la tolerancia a fallos y el almacenamiento crítico. Estas propiedades fueron respaldas por verificaciones formales con herramientas como Verdi como revisamos en la seccion 1. Sin embargo, con la sección 2, se pudo evidenciar que estas garantías pueden traer costos elevados de coordinación, latencia y complejidad, por lo que en otros escenarios se puede optar por la aplicación de otras estrategias de replicación que no afecten tanto a la consistencia. Finalmente, con el análisis de las implementaciones reales como etcd o CockroachDB, concluimos que los modelos teóricos si necesitan de adaptaciones de ingeniería para mantener aspectos como la escalabilidad y el rendimiento, como es el caso de la compactación de logs, la optimización de lecturas o la multiplexación de los mensajes. Para investigaciones futuras, se podria proponer la busqueda de otros mecanismos que mejoren el proceso de simplificación de la verificación formal, con el objetivo de reducir costos de coordinación que pueden tener los sistemas distribuidos de gran escala y los entornos de edge computing.
+
+\subsection{Declaración de Uso de Herramientas de Inteligencia Artificial}
+De acuerdo con las directrices éticas de la actividad, se declara el uso de las siguientes herramientas de Inteligencia Artificial durante la elaboración de este informe:
+
+\begin{itemize}
+    \item \textbf{Herramienta(s) Utilizada(s):} Claude Sonnet 5, ChatGPT 5.5, NotebookLM, Scopus IA
+    \item \textbf{Fases del Proceso en que se Empleó:} 
+    \begin{enumerate}
+        \item \textit{Fase de Ideación:} Formulación y refinamiento de las preguntas de investigación iniciales con Claude y ChatGPT.
+        \item \textit{Fase de Investigación:} Con la herramienta de Scopus IA, se extrajeron los articulos en base a las preguntas de investigación para las fuentes formales; para las fuentes grises se fue investigando manualmente las paginas web oficiales de las empresas.
+        \item \textit{Fase de Redacción y Estructura:} Se usó la IA para verificar algunos parrafos propios y mejorar la redacción de los puntos de las secciones. Por último se aplicó las recomendaciones para la estructura del informe en código Latex para las tablas, subtitulos y enumeraciones. % TODO: Describir si se usó para revisar ortografía, estructurar tablas en LaTeX, etc.
+    \end{enumerate}
+    \item \textbf{Proceso de Validación y Verificación Humana:} % TODO: Detallar críticamente cómo el equipo se aseguró de que las referencias no fueran falsas ("alucinadas") y que el análisis técnico fuera preciso.
+    Todos los textos y referencias generados o sugeridos por la IA fueron verificados manualmente contra la literatura formal e industrial citada en la Sección~\ref{sec:metodologia} para asegurar la veracidad del contenido presentado. Durante este proceso, se fue comprobando las afirmaciones, conceptos técnicos y ejemplos prácticos de los artículos para poder contrastar criterios propios de nuestro análisis.
+\end{itemize}
+
+
+
+\begin{thebibliography}{99}
+
+\bibitem{bravo2024}
+Bravo, M., Chockler, G., \& Gotsman, A. (2024).
+\textit{Liveness and latency of Byzantine state-machine replication}.
+\textit{Distributed Computing, 37}(2), 177--205.
+\url{https://doi.org/10.1007/s00446-024-00466-4} \textbf{[Fuente Formal]}
+
+\bibitem{brooker2020}
+Brooker, M. (2020).
+\textit{Leader Election in Distributed Systems}. 
+AWS Builder Center. 
+\url{https://aws.amazon.com/builders-library/leader-election-in-distributed-systems/} \textbf{[Fuente Gris]}
+
+\bibitem{cockroach2015}
+Cockroach Labs. (2015, 12 de junio). 
+\textit{Scaling Raft}. 
+CockroachDB Blog. 
+\url{https://www.cockroachlabs.com/blog/scaling-raft/} \textbf{[Fuente Gris]}
+
+\bibitem{etcd2021}
+The etcd maintainers. (2021, 17 de agosto). 
+\textit{KV API guarantees}. 
+etcd Documentation. 
+\url{https://etcd.io/docs/v3.5/learning/api_guarantees/} \textbf{[Fuente Gris]}
+
+\bibitem{kondru2026}
+Kondru, K. K., Rajiakodi, S., Shanmugavadivu, P., \& Saleem Raja, A. (2026).
+\textit{Kubernetes for highly scalable and self-healing software systems}.
+In \textit{Advances in Computers} (Vol. 141, pp. 383--407).
+Elsevier.
+\url{https://doi.org/10.1016/bs.adcom.2025.06.010} \textbf{[Fuente Formal]}
+
+\bibitem{lebow2025}
+Lebow, L., Dunkle, M., Siems, C., Zarnstorff, J., \& Tseng, L. (2025).
+\textit{Revisiting state machine replication in practice: Lessons from building an etcd-inspired system}.
+In \textit{Proceedings of the 2025 ACM Symposium on Cloud Computing (SoCC 2025)} (pp. 456--463).
+Association for Computing Machinery.
+\url{https://doi.org/10.1145/3772052.3772246} \textbf{[Fuente Formal]}
+
+\bibitem{liang2025}
+Liang, Z., Jabrayilov, V., Aghayev, A., \& Charapko, A. (2025).
+\textit{Practical considerations for implementing state machine replication in the cloud}.
+In \textit{Proceedings of the IEEE International Conference on Distributed Computing Systems (ICDCS 2025)} (pp. 791--801).
+IEEE.
+\url{https://doi.org/10.1109/ICDCS63083.2025.00082} \textbf{[Fuente Formal]}
+
+\bibitem{maiyya2021}
+Maiyya, S., Ahmad, I., Agrawal, D., \& El Abbadi, A. (2021).
+\textit{Samya: A geo-distributed data system for high contention aggregate data}.
+In \textit{Proceedings of the IEEE 37th International Conference on Data Engineering (ICDE 2021)} (pp. 1440--1451).
+IEEE.
+\url{https://doi.org/10.1109/ICDE51399.2021.00128} \textbf{[Fuente Formal]}
+
+\bibitem{srivastava2023}
+Srivastava, D. (2023, 7 de abril). 
+\textit{Strict Serializability and External Consistency in Spanner}. 
+Google Cloud Blog. 
+\url{https://cloud.google.com/blog/products/databases/strict-serializability-and-external-consistency-in-spanner} \textbf{[Fuente Gris]}
+
+\bibitem{woos2016}
+Woos, D., Wilcox, J. R., Anton, S., Tatlock, Z., Ernst, M. D., \& Anderson, T. (2016).
+\textit{Planning for change in a formal verification of the Raft consensus protocol}.
+In \textit{Proceedings of the 5th ACM SIGPLAN Conference on Certified Programs and Proofs (CPP 2016)} (pp. 154--165).
+Association for Computing Machinery.
+\url{https://doi.org/10.1145/2854065.2854081} \textbf{[Fuente Formal]}
+
+\end{thebibliography}
+
+
+
+\end{document}
