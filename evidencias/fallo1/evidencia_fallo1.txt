@@ -1,19 +1,22 @@
 # EVIDENCIA DE RECUPERACIÓN - FALLO 1: EL INVENTARIO FANTASMA
 
-## 📌 Descripción del Experimento
+## Descripción del Experimento
 Se simula la caída física abrupta del microservicio de Inventario durante el procesamiento de una reserva. El objetivo es comprobar que el Servicio de Reservas no colapsa y realiza reintentos automáticos de forma exitosa mientras Kubernetes levanta un pod de reemplazo.
 
 ---
 
-## 💻 Comando de Inyección del Caos
+## Comando de Inyección del Caos
 ```bash
-# Eliminar el pod activo de inventario de forma inmediata (simulando un crash de hardware)
-kubectl delete pod -l app=inventario-service --force --grace-period=0
+# Inyectar la caída usando el script de caos:
+bash caos/inject_crash_inventario.sh
+
+# O manualmente eliminando el pod con la etiqueta correcta:
+kubectl delete pod -l app=inventario --force --grace-period=0
 ```
 
 ---
 
-## 📄 Logs de Consola del Servicio de Reservas
+## Logs de Consola del Servicio de Reservas
 A continuación se muestran los logs de `reservas-service` obtenidos en tiempo real durante la inyección del fallo:
 
 ```text
@@ -27,7 +30,6 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 INFO:     10.244.1.4:43210 - "POST /reservar HTTP/1.1" 200 OK
 [RETRY LOG] Intento 1 fallido para conectar a Inventario. Error: ConnectError([Errno 111] Connection refused)
 [RETRY LOG] Esperando 1 segundo para reintentar...
-
 [RETRY LOG] Intento 2 fallido para conectar a Inventario. Error: ConnectError([Errno 111] Connection refused)
 [RETRY LOG] Esperando 1 segundo para reintentar...
 
@@ -41,7 +43,7 @@ INFO:     Notificación enviada con éxito.
 
 ---
 
-## 📈 Métrica de Éxito
+## Métrica de Éxito
 * **Comportamiento Esperado:** Petición HTTP exitosa (HTTP 200) recibida por el cliente.
 * **Resultado Obtenido:**
   - Código HTTP retornado al cliente: **200 OK**

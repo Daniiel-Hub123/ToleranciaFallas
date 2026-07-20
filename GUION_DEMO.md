@@ -95,9 +95,13 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
   *Resultado esperado:* Retorna la reserva completada.
 
 * **Inyección de la Falla:**
-  En una segunda terminal, elimine de forma forzada el pod de inventario en medio de la transacción:
+  En una segunda terminal, ejecute el script de caos para tumbar el pod de inventario:
   ```powershell
-  kubectl delete pod -l app=inventario --force --grace-period=0
+  # En PowerShell:
+  bash caos/inject_crash_inventario.sh
+
+  # O en Git Bash / Linux:
+  ./caos/inject_crash_inventario.sh
   ```
   Inmediatamente después, vuelva a mandar la petición de reserva en la primera terminal.
 
@@ -128,16 +132,21 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
   ```
 
 * **Inyección del Caos:**
-  En su terminal principal, active la latencia simulada en pagos:
+  En su terminal principal, ejecute el script de caos para activar la latencia de pagos (no requiere port-forward previo):
   ```powershell
-  Invoke-RestMethod -Method Post -Uri "http://localhost:8000/config" -Body '{"latencia": true}' -ContentType "application/json"
+  # En PowerShell:
+  bash caos/inject_latencia_pagos.sh on
+
+  # O en Git Bash / Linux:
+  ./caos/inject_latencia_pagos.sh on
   ```
 
 * **Comandos de Verificación en Vivo:**
   1. **Verificar que la configuración de latencia se aplicó correctamente:**
+     Consulte el estado del caos directamente en el pod:
      ```powershell
-     Invoke-RestMethod -Method Get -Uri "http://localhost:8000/config"
-     # Debe retornar: {"latencia": true}
+     kubectl exec $(kubectl get pod -l app=pagos -o jsonpath='{.items[0].metadata.name}') -- python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/config').read().decode())"
+     # Debe retornar: {"modo_caos": "latencia"}
      ```
   2. **Monitorear transiciones del Circuit Breaker en Reservas:**
      Abra otra terminal y siga los logs en vivo:
@@ -153,12 +162,16 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
   * Verás en los logs de Reservas: `[CIRCUIT BREAKER] Intento de llamada bloqueado. Estado actual: OPEN.`
 
 * **Recuperación:**
-  Apague la latencia de pagos:
+  Desactive el modo latencia en el servicio de pagos usando el script de caos:
   ```powershell
-  Invoke-RestMethod -Method Post -Uri "http://localhost:8000/config" -Body '{"latencia": false}' -ContentType "application/json"
+  # En PowerShell:
+  bash caos/inject_latencia_pagos.sh off
+
+  # O en Git Bash / Linux:
+  ./caos/inject_latencia_pagos.sh off
   ```
   Espera 30 segundos (tiempo de enfriamiento). Envía una nueva petición; en los logs verás que el circuito pasa a *Half-Open*, se procesa exitosamente la llamada, regresa a `CLOSED` y las transacciones vuelven a responder con **HTTP 200 OK**.
-  Cierre la terminal de `port-forward` pulsando `Ctrl+C`.
+  Cierre la terminal de `port-forward` si la abrió previamente.
 
 ---
 
@@ -185,9 +198,13 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
 
 ### 5. Caso 4: El Correo Perdido (Degradación Elegante) (Integrante B)
 * **Inyección del Caos:**
-  Simula la desconexión total del servicio de notificaciones escalando sus réplicas a cero:
+  Simule la desconexión total del servicio de notificaciones usando el script de caos:
   ```powershell
-  kubectl scale deployment/notificaciones-deployment --replicas=0
+  # En PowerShell:
+  bash caos/inject_caida_correo.sh down
+
+  # O en Git Bash / Linux:
+  ./caos/inject_caida_correo.sh down
   ```
 
 * **Comandos de Verificación en Vivo:**
@@ -209,9 +226,13 @@ $GATEWAY_URL = "http://127.0.0.1:XXXXX"
      *(Debe ver el log: `[FALLBACK WARNING] Error de conexion con servicio de notificaciones...`)*.
 
 * **Recuperación:**
-  Restaura las réplicas del servicio de notificaciones:
+  Restaure el servicio de notificaciones usando el script de caos:
   ```powershell
-  kubectl scale deployment/notificaciones-deployment --replicas=1
+  # En PowerShell:
+  bash caos/inject_caida_correo.sh up
+
+  # O en Git Bash / Linux:
+  ./caos/inject_caida_correo.sh up
   ```
   Verifique que el pod se levantó correctamente en el Nodo 2 (`minikube-m02`):
   ```powershell

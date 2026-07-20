@@ -1,19 +1,22 @@
 # EVIDENCIA DE RECUPERACIÓN - FALLO 2: LA PASARELA LENTA
 
-## 📌 Descripción del Experimento
+## Descripción del Experimento
 Se simula lentitud crítica en la pasarela externa de pagos (retraso de 20s). Se evalúa que el microservicio de Reservas active su Timeout (3.0s) para evitar colgar sockets de red, incremente el contador de fallos y active el Circuit Breaker (OPEN), bloqueando peticiones adicionales con error HTTP 503 rápido.
 
 ---
 
-## 💻 Comando de Inyección del Caos
+## Comando de Inyección del Caos
 ```bash
-# Inyectar latencia de 20 segundos de forma manual al servicio de pagos
-curl -X POST -H "Content-Type: application/json" -d '{"latencia": true}' http://pagos-service:8000/config
+# Inyectar latencia usando el script de caos:
+bash caos/inject_latencia_pagos.sh on
+
+# O manualmente (si tiene port-forward):
+curl -X POST -H "Content-Type: application/json" -d '{"latencia": true}' http://localhost:8000/config
 ```
 
 ---
 
-## 📄 Logs de Consola del Servicio de Reservas
+## Logs de Consola del Servicio de Reservas
 A continuación se muestran los logs de `reservas-service` que documentan la apertura del Circuit Breaker:
 
 ```text
@@ -37,7 +40,7 @@ INFO: 503 Service Unavailable retornado de forma rápida.
 
 ---
 
-## 📈 Métrica de Éxito
+## Métrica de Éxito
 * **Comportamiento Esperado:** Las llamadas inmediatas fallan rápido con código HTTP 503 sin consumir recursos ni esperar 3 segundos.
 * **Resultados Obtenidos:**
 
