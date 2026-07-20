@@ -1,6 +1,6 @@
-# Guion de la Demo en Vivo: Tolerancia a Fallas y Resiliencia
+# Guion de la Demo en Vivo: Tolerancia a Fallas y Resiliencia (Windows)
 
-Este documento es el guion paso a paso de la demostración práctica (Parte IV de la asignación) de los mecanismos de resiliencia implementados sobre el clúster Kubernetes multinodo, aplicable de manera general para cualquier entorno (Linux, macOS, Windows).
+Este documento es el guion paso a paso de la demostración práctica (Parte IV de la asignación) de los mecanismos de resiliencia implementados sobre el clúster Kubernetes multinodo, diseñado y optimizado específicamente para entornos de **Windows (PowerShell)**.
 
 * **Duración Estimada:** 10–15 minutos.
 * **Modalidad:** Presentación compartida (Integrante A e Integrante B).
@@ -9,22 +9,19 @@ Este documento es el guion paso a paso de la demostración práctica (Parte IV d
 
 ## 🛠️ Paso 0: Preparación del Clúster (Desde Cero)
 
-Para iniciar la demostración con un entorno limpio, navegue a la carpeta raíz del proyecto y ejecute los comandos correspondientes a su sistema operativo:
+Para iniciar la demostración con un entorno limpio, abra su terminal de **PowerShell** (como Administrador) y navegue a la carpeta del proyecto:
 
-```bash
-# 1. CD al proyecto
-cd /ruta/al/proyecto/ToleranciaFallas
+```powershell
+# 1. CD al proyecto (Reemplace con la ruta local donde descargó el repositorio)
+cd C:\ruta\al\proyecto\ToleranciaFallas
 
-# 2. Iniciar el clúster multi-nodo (Minikube o Kind)
+# 2. Iniciar el clúster multi-nodo en Minikube
 minikube start --nodes 2
 
-# 3. Vincular el entorno de Docker al demonio del clúster
-# Para Linux / macOS (Bash/Zsh):
-eval $(minikube docker-env)
-# Para Windows (PowerShell):
-minikube docker-env | Invoke-Expression
+# 3. Vincular el entorno de Docker al daemon del clúster Minikube
+& minikube -p minikube docker-env | Invoke-Expression
 
-# 4. Construir imágenes de los microservicios
+# 4. Construir las imágenes de los microservicios en el clúster
 docker build -t toleraciafallas/api-gateway:latest ./src/api-gateway
 docker build -t toleraciafallas/reservas:latest ./src/reservas
 docker build -t toleraciafallas/inventario:latest ./src/inventario
@@ -44,17 +41,14 @@ kubectl apply -f k8s/pod-anti-affinity-rules.yaml
 kubectl get pods -w
 ```
 
-Una vez que los pods estén listos, exponga el API Gateway y configure la dirección en su terminal:
+Una vez que los pods estén listos, exponga el API Gateway y configure la dirección en su terminal de PowerShell:
 
-```bash
+```powershell
 # Exponer el servicio del API Gateway para obtener la URL de acceso
 minikube service api-gateway-service --url
 
-# Guardar la dirección obtenida en una variable de entorno de su terminal:
-# En Linux / macOS (Bash):
-export GATEWAY_URL="http://<IP_Y_PUERTO_OBTENIDO>"
-# En Windows (PowerShell):
-$GATEWAY_URL = "http://<IP_Y_PUERTO_OBTENIDO>"
+# Guardar la dirección del túnel en la variable de entorno de PowerShell (reemplace con la URL entregada):
+$GATEWAY_URL = "http://127.0.0.1:XXXXX"
 ```
 
 ---
@@ -74,32 +68,32 @@ $GATEWAY_URL = "http://<IP_Y_PUERTO_OBTENIDO>"
 ## 🧪 Pasos de la Presentación en Vivo
 
 ### 1. Presentación de Topología (Integrante A)
-* **Comando a ejecutar:**
-  ```bash
+* **Comandos a ejecutar:**
+  ```powershell
   kubectl get nodes -o wide
   kubectl get pods -o wide
   ```
 * **Explicación:**
-  - Mostrar que el clúster cuenta con al menos **2 nodos activos**.
+  - Mostrar que el clúster cuenta con **2 nodos activos** en Windows (`minikube` y `minikube-n2`).
   - Enseñar la columna de `NODE` en los pods para demostrar que las réplicas del servicio crítico de reservas se han distribuido en nodos físicos separados mediante políticas de anti-afinidad.
 
 ---
 
 ### 2. Caso 1: El Inventario Fantasma (Reintentos) (Integrante A)
 * **Petición Normal (Antes del fallo):**
-  ```bash
-  curl -X POST -H "Content-Type: application/json" -d '{"asiento_id": "asiento_1"}' $GATEWAY_URL/reservar
+  ```powershell
+  Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_1"}' -ContentType "application/json"
   ```
-  *Resultado esperado:* Retorna HTTP 200 con la reserva completada.
+  *Resultado esperado:* Retorna la reserva completada.
 
 * **Inyección de la Falla:**
-  En una segunda terminal, elimine abruptamente el pod de inventario en medio de la transacción:
-  ```bash
+  En una segunda terminal, elimine de forma forzada el pod de inventario en medio de la transacción:
+  ```powershell
   kubectl delete pod -l app=inventario --force --grace-period=0
   ```
   Inmediatamente después, vuelva a mandar la petición de reserva en la primera terminal.
   En otra ventana, monitoree los logs de Reservas para evidenciar el fallo:
-  ```bash
+  ```powershell
   kubectl logs -l app=reservas --tail=30 -f
   ```
   *Resultado esperado:* El log de Reservas mostrará errores de red (`ConnectError`) e iniciará reintentos automáticos separados por 1s. Una vez levantado el pod de reemplazo por Kubernetes, la transacción finalizará con éxito (HTTP 200).
@@ -109,30 +103,30 @@ $GATEWAY_URL = "http://<IP_Y_PUERTO_OBTENIDO>"
 ### 3. Caso 2: La Pasarela Lenta (Circuit Breaker) (Integrante B)
 * **Activar Port-Forward a Pagos:**
   En una terminal secundaria, configure el reenvío de puertos para acceder al microservicio interno de pagos:
-  ```bash
+  ```powershell
   kubectl port-forward svc/pagos-service 8000:8000
   ```
 * **Inyección del Caos:**
   En su terminal principal, active la latencia simulada en pagos:
-  ```bash
-  curl -X POST -H "Content-Type: application/json" -d '{"latencia": true}' http://localhost:8000/config
+  ```powershell
+  Invoke-RestMethod -Method Post -Uri "http://localhost:8000/config" -Body '{"latencia": true}' -ContentType "application/json"
   ```
 * **Ejecución de la prueba:**
   Envíe 3 reservas consecutivas. Cada una demorará exactamente **3 segundos** y fallará con un HTTP 504 (Timeout).
   A la 4ta petición, la respuesta será instantánea (0.002s) retornando un error **HTTP 503 (Circuit Breaker is OPEN)**.
 * **Recuperación:**
   Apague la latencia de pagos:
-  ```bash
-  curl -X POST -H "Content-Type: application/json" -d '{"latencia": false}' http://localhost:8000/config
+  ```powershell
+  Invoke-RestMethod -Method Post -Uri "http://localhost:8000/config" -Body '{"latencia": false}' -ContentType "application/json"
   ```
-  Espera 30 segundos (tiempo de enfriamiento). Envía una nueva petición; el circuito pasará a *Half-Open*, se cerrará (`CLOSED`) y las transacciones volverán a funcionar con éxito. Cierre la terminal de `port-forward`.
+  Espera 30 segundos (tiempo de enfriamiento). Envía una nueva petición; el circuito pasará a *Half-Open*, se cerrará (`CLOSED`) y las transacciones volverán a funcionar con éxito. Cierre la terminal de `port-forward` pulsando `Ctrl+C`.
 
 ---
 
 ### 4. Caso 3: El Diluvio de Peticiones (Rate Limiting) (Integrante A)
 * **Inyección del Caos:**
   Dispare la prueba de sobrecarga usando la herramienta k6 dirigida al API Gateway:
-  ```bash
+  ```powershell
   k6 run -e TARGET_URL="$GATEWAY_URL/reservar" caos/inject_sobrecarga_k6.js
   ```
 * **Explicación:**
@@ -144,19 +138,19 @@ $GATEWAY_URL = "http://<IP_Y_PUERTO_OBTENIDO>"
 ### 5. Caso 4: El Correo Perdido (Degradación Elegante) (Integrante B)
 * **Inyección del Caos:**
   Simula la desconexión total del servicio de notificaciones escalando sus réplicas a cero:
-  ```bash
+  ```powershell
   kubectl scale deployment/notificaciones-deployment --replicas=0
   ```
 * **Ejecución de la prueba:**
   Realice una reserva normal:
-  ```bash
-  curl -X POST -H "Content-Type: application/json" -d '{"asiento_id": "asiento_2"}' $GATEWAY_URL/reservar
+  ```powershell
+  Invoke-RestMethod -Method Post -Uri "$GATEWAY_URL/reservar" -Body '{"asiento_id": "asiento_2"}' -ContentType "application/json"
   ```
 * **Explicación:**
   - El cliente recibe respuesta exitosa **HTTP 200 OK** con `"status": "Reserva Completada"`, pero con la propiedad `"notificacion_estado": "Pendiente de reenvío en background"`.
   - Muestre los logs de reservas (`kubectl logs -l app=reservas --tail=20`) para enseñar la alerta de fallback: `[FALLBACK WARNING] Error de conexion con servicio de notificaciones...`. El negocio no se detuvo por la caída de un servicio secundario.
 * **Recuperación:**
-  Restaure las réplicas del servicio de notificaciones:
-  ```bash
+  Restaura las réplicas del servicio de notificaciones:
+  ```powershell
   kubectl scale deployment/notificaciones-deployment --replicas=1
   ```
